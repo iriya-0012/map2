@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Map2</title>
+  <link rel="stylesheet" href="style.css" type="text/css">
+</head>
+<body id="body">
+  <div id="div_can" class="c_can">
+    <canvas id="can_main"></canvas>
+    <canvas id="can_error"></canvas>
+    <canvas id="can_flag"></canvas> 
+    <canvas id="can_log"></canvas>     
+  </div>
+  <div id="div_kno">
+    <a>機能:</a>
+    <a id="a_kno" class="c_a">地図</a>
+    <a id="a_kno_log" class="c_a">未録</a>
+  </div>
+  <div id="div_map">
+    <a>地図:</a>
+    <a id="a_map_file" class="c_a">選択</a>
+    <input id="in_map_file" type="file" style="display:none"></input>
+    <input id="in_map_text" type="text"></input>
+    <select id="sel_map_ex"></select>
+    <a id="a_map_pos" class="c_a">位Ｘ</a>
+    <a id="a_map_disp" class="c_a">表示</a>
+  </div>
+  <div id="div_ope">
+    <a>操作:</a>
+    <select id="sel_ope">
+      <option value="dispAll">全表示</option>
+      <option value="dispSel">選択表示</option>
+      <option value="dispSumm">集計表示</option>
+      <option value="saveAll">全保存</option>
+      <option value="saveSel">選択保存</option>
+      <option value="addKan">管理データ追加</option>
+      <option value="addFile">保存データ追加</option>  
+      <option value="delSel">選択削除</option>
+    </select>
+    <a id="a_ope_key">選択:</a>
+    <select id="sel_ope_key"></select>
+    <input id="in_save_file" type="file" style="display:none"></input>
+    <a id="a_ope_exe" class="c_a">実行</a>
+  </div>
+  <div id="div_act1">
+    <a>キー:</a>
+    <input type="text" id="in_act_key"></input>
+    <a id="a_act_ins" class="c_a">＋</a> 
+    <a id="a_act_upd" class="c_a">Ｃ</a>   
+    <a id="a_act_del" class="c_a">Ｄ</a>
+  </div>
+  <div id="div_act2">
+    <a>内容:</a>
+    <input type="text" id="in_act_val"></input>  
+  </div>
+  <div id="div_all">
+    <table class="border-solid">
+      <thead>
+        <tr>
+          <th>key</th>
+          <th>value</th>
+        </tr>
+      </thead>
+      <tbody id="tbo_all"></tbody>
+    </table>
+  </div>
+  <div id="div_head">
+    <table class="border-solid">
+      <thead>
+        <tr>
+          <th>key</th>
+          <th>value (head)</th>
+        </tr>
+      </thead>
+      <tbody id="tbo_head"></tbody>
+    </table>
+  </div>
+  <div id="div_flag">
+    <table class="border-solid">
+      <thead>
+        <tr>
+          <th>key</th>
+          <th>value (flag)</th>
+        </tr>
+      </thead>
+      <tbody id="tbo_flag"></tbody>
+    </table>
+  </div>
+  <div id="div_log">
+    <table class="border-solid">
+      <thead>
+        <tr>
+          <th>key</th>
+          <th>value (log)</th>
+        </tr>
+      </thead>
+      <tbody id="tbo_log"></tbody>
+    </table>
+  </div>
+  <div id="div_summ">
+    <table class="border-solid">
+      <thead>
+        <tr>
+          <th>key</th>
+          <th>log , flag</th>
+        </tr>
+      </thead>
+      <tbody id="tbo_summ"></tbody>
+    </table>
+  </div>
+  <pre id="pre_info"></pre>
+  <script type="text/javascript" src="main.js"></script>
+</body>
+</html>
