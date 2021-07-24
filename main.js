@@ -715,7 +715,7 @@ function gen_ok(gen) {
     log.lat  = genzai.lat;
     log.x    = genzai.x;
     log.y    = genzai.y;
-    logA.push(log);
+    // logA.push(log);
     let key  = `${MAP_LOG}${head.id}_${mm}${dd}_${HH}${MM}`;
     let val  = `${genzai.long} ${genzai.lat}`;
     localStorage.setItem(key,val);
