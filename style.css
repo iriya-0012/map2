@@ -1,13 +1,16 @@
-    body            { background:green; color: white; font-size: 14px; font-weight: 100; margin: 0px 0px 0px 0px; }
-    th, td          { border: solid 1px; padding: 0px 10px 0px 10px; }
-    select          { color:green; background:#def8dc; height: 30px; }
-    #in_map_text    { color:green; background:#def8dc; height: 23px; width: 68px; }
-    #in_act_key     { color:green; background:#def8dc; height: 23px; width: 205px; }
-    #in_act_val     { color:green; background:#def8dc; height: 23px; width: 300px; }
-    #div_kno, #div_map, #div_ope, #div_act1, #div_act2, #div_all, #div_head, #div_flag, #div_log, #div_summ
-                    { margin: 10px 0px 0px 0px; }
-    #pre_info       { margin: 0px 0px 0px 0px; }
-    .c_a            { color:green; background:#def8dc; padding: 0px 3px 0px 3px; border: solid 3px; border-color: lightgreen; border-radius: 5px / 5px; }
-    .c_a:hover      { background:#00ff00; }
-    .c_can          { position: relative; }
-    .c_can > canvas { position: absolute; }   
+body            { background:green; color:white; font-size: 14px; font-weight: 100; margin: 0px 0px 0px 0px; }
+th, td          { border: solid 1px; padding: 0px 10px 0px 10px; }
+select          { background:#e0ffff; color:blue; height: 23px; }
+#a_ope_exe      { width: 30px }
+#in_map_text    { background:#e0ffff; color:blue; height: 23px; width: 68px; }
+#in_act_key     { background:#e0ffff; color:blue; height: 23px; width: 205px; }
+#in_act_val     { background:#e0ffff; color:blue; height: 23px; width: 300px; }
+#div_tab        { position: fixed; right:2px; top: 3px; z-index: 1; }
+#div_kno, #div_map, #div_set
+                { margin: 30px 0px 0px 0px; }
+#div_act1, #div_act2, #div_all, #div_head, #div_flag, #div_log, #div_summ, #div_info
+                { margin: 5px 0px 0px 0px; } 
+.c_a            { background:#e0ffff; border-color:blue; color:blue; font-size: 110%; padding: 0px 3px 0px 3px; border: solid 3px; border-radius: 5px / 5px; }
+.c_a:hover      { background:#70ffff; }
+.c_can          { position: relative; }
+.c_can > canvas { position: absolute; }
