@@ -297,7 +297,7 @@ a_set_pos.addEventListener("click",() => {
     CON_MAIN.clearRect(0,0,can_main.width, can_main.height);
     CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
     CON_LOG.clearRect(0,0,can_main.width, can_main.height);
-    CON_MAIN.drawImage(head.img,0,0);
+    CON_MAIN.drawImage(cHead.img,0,0);
     screen_disp(8);
     can_mode = 3;
 });
@@ -356,9 +356,13 @@ a_act_del.addEventListener("click",() => {
     }
 });
 // マウスdown
-can_log.addEventListener('mousedown',(e) => can_log_down(e));
-// タッチtart
-can_log.addEventListener("touchstart",(e) => can_log_down(e));
+can_log.addEventListener('mousedown',(e) => mouse_down(e,"m"));
+// マウスup
+can_log.addEventListener('mouseup',(e) => mouse_up(e,"m"));
+// タッチstart
+can_log.addEventListener("touchstart",(e) => mouse_down(e,"t"));
+// タッチend
+can_log.addEventListener("touchend",(e) => mouse_up(e,"t"));
 // 地図File選択
 in_map_file.addEventListener('change',(e) => {
     if (e.target.files.length == 0) return;
@@ -581,32 +585,6 @@ window.onload = () => {
     // headA 作成
     headA_set();
     if (!navigator.geolocation) info_disp("navigator.geolocation 位置情報取得 不可");
-}
-// キャンバス マウスdown
-function can_log_down(e) {
-    let x = e.offsetX;          // mouse down x
-    let y = e.offsetY;          // mouse down y 
-    if (can_mode == 1) {
-        // 現在地表示
-        adjustDt = new Date();
-        adjustL = true;
-        adjustX = x - setX;  // 調整 x
-        adjustY = y - setY;  // 調整 y
-        a_set_gen.innerHTML = "現在地調整済"; 
-        CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-        con_gen(CON_FLAG,x,y);
-    } else if (can_mode == 3) {
-        // 計測位置表示
-        let long = cConv.px_long(x);
-        let lat = cConv.py_lat(y);
-        let str = `位置 X=${x},Y=${y},経度=${long},緯度=${lat}`;
-        if (x < can_main.width - 400) {
-            con_box(CON_FLAG,x,y,400,40,"green",str);
-        } else {
-            con_box(CON_FLAG,x - 400,y,400,40,"green",str);
-        }
-        con_arc(CON_FLAG,x,y,1,"black"); 
-    }
 }
 // flag 吹出の丸→文字位置計算
 function change_pos_text(pos,text) {
@@ -932,6 +910,45 @@ function info_disp(info) {
         info_save = info;
     }
 }
+// マウスdown
+function mouse_down(e,mt) {
+    // 3本指タッチは戻る
+    if (mt == "t" && e.targetTouches.length > 2) screen_disp(1);  
+    mouseDownDate = new Date();
+}
+// マウスup
+function mouse_up(e,mt) {
+    // マウス up - down 長押
+    let mouseUpDate = new Date();
+    let ms = mouseUpDate.getTime() - mouseDownDate.getTime();    
+    // mouse up 位置
+    mouseUpX = e.offsetX;
+    mouseUpY = e.offsetY;
+
+    if (can_mode == 1 && (mt == "m" || mt == "t" && ms > con_long)) {
+        // 現在地表示
+        adjustDt = mouseUpDate;
+        adjustL = true;
+        adjustX = mouseUpX - setX;  // 調整 x
+        adjustY = mouseUpY - setY;  // 調整 y
+        a_set_gen.innerHTML = "現在地調整済"; 
+        CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+        con_gen(CON_FLAG,mouseUpX,mouseUpY);
+        return;
+    }
+    if (can_mode == 3 && (mt == "m" || mt == "t" && ms > con_long)) {
+        // 計測位置表示
+        let long = cConv.px_long(mouseUpX);
+        let lat = cConv.py_lat(mouseUpY);
+        let str = `位置 X=${mouseUpX},Y=${mouseUpY},経度=${long},緯度=${lat}`;
+        if (mouseUpX < can_main.width - 400) {
+            con_box(CON_FLAG,mouseUpX,mouseUpY,400,40,"green",str);
+        } else {
+            con_box(CON_FLAG,mouseUpX - 400,mouseUpY,400,40,"green",str);
+        }
+        con_arc(CON_FLAG,mouseUpX,mouseUpY,1,"black"); 
+    }
+}
 // 表示
 function screen_disp(screen) {
     // 機能選択                    c k o 2 e m s k v a h f l s i
@@ -1189,9 +1206,13 @@ let cLog      = new classLog;
 let cHead     = new classHead;
 let cText     = new classText;
 let image     = new Image;
+let adjustDt;           // 調整位置取得、日付時間
+let adjustF = false;    // 調整設定      true:済   false:未
+let adjustL = false;    // 調整 log 出力 true:必要 false:不要
+let adjustX = 0;        // 調整 x
+let adjustY = 0;        // 調整 y
 let can_rect  = can_main.getBoundingClientRect();
 let can_mode  = 0;      // 1:現在地設定、3:地図位置表示、5:地図表示
-let click_start;        // クリック開始時間
 let con_file  = "";     // 地図file名
 let con_long  = 2;      // 長押し(2秒)
 let con_posF  = false;  // 現在地設定
@@ -1202,21 +1223,19 @@ let flagA;              // flag Array
 let flagT;              // flag Array
 let headA;              // head Array
 let headT;              // head Array
-let logA;               // log Array
-let logT;               // log Array
-let adjustDt;           // 調整位置取得、日付時間
-let adjustF = false;    // 調整設定      true:済   false:未
-let adjustL = false;    // 調整 log 出力 true:必要 false:不要
-let adjustX = 0;        // 調整 x
-let adjustY = 0;        // 調整 y
-let setLong;            // 設定 long
-let setLat;             // 設定 lat
-let setX;               // 設定 x
-let setY;               // 設定 y
 let info_cnt  = 0;
 let info_save = "";
 let key_all;
 let key_save;
+let logA;               // log Array
+let logT;               // log Array
+let mouseDownDate;      // mouse down日付時間
+let mouseUpX;           // mouse up x
+let mouseUpY;           // mouse up y
+let setLong;            // 設定 long
+let setLat;             // 設定 lat
+let setX;               // 設定 x
+let setY;               // 設定 y
 let scale_pos;
 let val_all;
 let val_save;
