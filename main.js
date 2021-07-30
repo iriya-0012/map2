@@ -925,7 +925,7 @@ function mouse_up(e,mt) {
     mouseUpX = e.offsetX;
     mouseUpY = e.offsetY;
 
-    if (can_mode == 1 && (mt == "m" || mt == "t" && ms > con_long)) {
+    if (can_mode == 1 && ms > con_long) {
         // 現在地表示
         adjustDt = mouseUpDate;
         adjustL = true;
@@ -936,7 +936,7 @@ function mouse_up(e,mt) {
         con_gen(CON_FLAG,mouseUpX,mouseUpY);
         return;
     }
-    if (can_mode == 3 && (mt == "m" || mt == "t" && ms > con_long)) {
+    if (can_mode == 3 && ms > con_long) {
         // 計測位置表示
         let long = cConv.px_long(mouseUpX);
         let lat = cConv.py_lat(mouseUpY);
