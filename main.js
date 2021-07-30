@@ -355,6 +355,36 @@ a_act_del.addEventListener("click",() => {
         tbo_head_flag_log_disp();
     }
 });
+// click
+can_log.addEventListener("click",(e) => {
+    let clickDate = new Date();
+    // mouse click 位置
+    mouseUpX = e.offsetX;
+    mouseUpY = e.offsetY;
+    if (can_mode == 1) {
+        // 現在地表示
+        adjustDt = clickDate;
+        adjustL = true;
+        adjustX = mouseUpX - setX;  // 調整 x
+        adjustY = mouseUpY - setY;  // 調整 y
+        a_set_gen.innerHTML = "現在地調整済"; 
+        CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+        con_gen(CON_FLAG,mouseUpX,mouseUpY);
+        return;
+    }
+    if (can_mode == 3) {
+        // 計測位置表示
+        let long = cConv.px_long(mouseUpX);
+        let lat = cConv.py_lat(mouseUpY);
+        let str = `位置 X=${mouseUpX},Y=${mouseUpY},経度=${long},緯度=${lat}`;
+        if (mouseUpX < can_main.width - 400) {
+            con_box(CON_FLAG,mouseUpX,mouseUpY,400,40,"green",str);
+        } else {
+            con_box(CON_FLAG,mouseUpX - 400,mouseUpY,400,40,"green",str);
+        }
+        con_arc(CON_FLAG,mouseUpX,mouseUpY,1,"black"); 
+    }
+});
 // マウスdown
 can_log.addEventListener('mousedown',(e) => mouse_down(e,"m"));
 // マウスup
@@ -924,7 +954,6 @@ function mouse_up(e,mt) {
     // mouse up 位置
     mouseUpX = e.offsetX;
     mouseUpY = e.offsetY;
-
     if (can_mode == 1 && ms > con_long) {
         // 現在地表示
         adjustDt = mouseUpDate;
