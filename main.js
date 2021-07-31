@@ -29,7 +29,8 @@ class classConvert {
     }
     // 緯度-->height 変換
     lat_py(lat) {
-        return Math.round(this.height * (lat - this.bottom) / (this.top - this.bottom));
+      //return Math.round(this.height * (lat - this.bottom) / (this.top - this.bottom));    
+        return Math.round(this.height * (this.top - lat) / (this.top - this.bottom));
     }
     // height-->緯度 変換
     py_lat(y) {
