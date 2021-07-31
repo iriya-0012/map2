@@ -735,10 +735,10 @@ function con_log(con,hm,long,aX,lat,aY,dir) {
     // 色の選択
     let color; 
     if      (hm < "0600") {color = "black"}
-    else if (hm < "0900") {color = "green"}
-    else if (hm < "1200") {color = "orange"}
-    else if (hm < "1800") {color = "red"}
-    else                  {color = "blue"}
+    else if (hm < "0900") {color = "blue"}
+    else if (hm < "1500") {color = "green"}
+    else if (hm < "1800") {color = "blue"}
+    else                  {color = "black"}
     // 箱・線の位置
     let text = `${hm.substr(0,2)}:${hm.substr(2,2)}`;
     let bx;         // 箱・左上x
