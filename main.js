@@ -121,16 +121,10 @@ a_tab_gen.addEventListener("click",() => {
     CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
     CON_LOG.clearRect(0,0,can_main.width, can_main.height);
     CON_MAIN.drawImage(cHead.img,0,0);
+    // 現在地取得処理
+    navigator.geolocation.getCurrentPosition(gen_ok_b,gen_err,gen_opt)
     screen_disp(8);
-    if (adjustF) {
-        // 取得済処理
-        CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-        con_gen(CON_FLAG,setX + adjustX,setY + adjustY);
-    } else {
-        // 未取得処理
-        navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt)
-    }
-    can_mode = 1;
+    can_mode = 3;
 });
 // 表示
 a_tab_disp.addEventListener("click",() => {
@@ -263,7 +257,27 @@ a_map_file.addEventListener("click",() => {
     in_map_file.click();
 });
 // 現在地設定
-a_set_gen.addEventListener("click",() => a_tab_gen.click());
+a_set_gen.addEventListener("click",() => {
+    if (con_file == "") {
+        alert("地図未選択");
+        return;
+    }
+    // 消去・地図表示
+    CON_MAIN.clearRect(0,0,can_main.width, can_main.height);
+    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+    CON_LOG.clearRect(0,0,can_main.width, can_main.height);
+    CON_MAIN.drawImage(cHead.img,0,0);
+    screen_disp(8);
+    if (adjustF) {
+        // 取得済処理
+        CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+        con_gen(CON_FLAG,setX + adjustX,setY + adjustY,"green",1);
+    } else {
+        // 未取得処理
+        navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt)
+    }
+    can_mode = 1;
+});
 // 記録開始
 a_set_log.addEventListener("click",() => {
     if (con_timerF) {
@@ -370,7 +384,7 @@ can_log.addEventListener("click",(e) => {
         adjustY = mouseUpY - setY;  // 調整 y
         a_set_gen.innerHTML = "現在地調整済"; 
         CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-        con_gen(CON_FLAG,mouseUpX,mouseUpY);
+        con_gen(CON_FLAG,mouseUpX,mouseUpY,"green",1);
         return;
     }
     if (can_mode == 3) {
@@ -689,22 +703,28 @@ function con_blow(con,px,py,tx,ty,color,text) {
     con.stroke();
 }
 // 現在地
-function con_gen(con,posX,posY) {
-    let x = Math.min(Math.max(0,posX),can_main.width);
-    let y = Math.min(Math.max(0,posY),can_main.height);
+function con_gen(con,px,py,color,mess) {
+    let x = Math.min(Math.max(0,px),can_main.width);
+    let y = Math.min(Math.max(0,py),can_main.height);
+    let background = "white";
+    switch (color) {
+        case "green":
+            background = "rgb(222,248,220)";
+            break;
+        case "red":
+            background = "rgb(255,192,203)";
+            break;
+        case "blue":
+            background = "rgb(224,255,255)";
+    }
     con.font = CON_FONT;
     // 丸
     con.beginPath();
-    con.arc(x,y,20,0,Math.PI*2,true);
-    con.fillStyle = "#90ee90";
-    con.fill();
-    con.strokeStyle = "green";
-    con.lineWidth = 2;
-    con.stroke();
-    // 丸
-    con.beginPath();
     con.arc(x,y,15,0,Math.PI*2,true);
+    con.fillStyle = background;
     con.fill();
+    con.strokeStyle = color;
+    con.lineWidth = 2;
     con.stroke();
     // 丸
     con.beginPath();
@@ -727,8 +747,18 @@ function con_gen(con,posX,posY) {
     con.lineWidth = 2;
     con.strokeRect(x-50,y+30,280,50);
     // 文字列描画
-    con.fillStyle = "black";
-    con.fillText("クリックにて現在地の変更",x-40,y+60); 
+    con.fillStyle = color;
+    // メッセージ
+    switch (mess) {
+        case 1:
+            con.fillText("クリックにて現在地の変更",x-40,y+60); 
+            break;
+        case 2:
+            con.fillText("調整前の位置",x-40,y+60); 
+            break;
+        case 3:
+            con.fillText("調整後の位置",x-40,y+60); 
+    }
 }
 // 吹出 log
 function con_log(con,hm,long,aX,lat,aY,dir) {
@@ -816,7 +846,16 @@ function gen_ok_a(gen) {
     adjustX  = 0;             // 調整 x
     adjustY  = 0;             // 調整 y
     a_set_gen.innerHTML = "現在地設定済";   
-    con_gen(CON_FLAG,setX,setY);
+    con_gen(CON_FLAG,setX,setY,"green",1);
+}
+// 現在地取得処理
+function gen_ok_b(gen) {
+    let Long  = Math.round(gen.coords.longitude * 1000000) / 1000000; // 経度
+    let Lat   = Math.round(gen.coords.latitude * 1000000) / 1000000;  // 緯度
+    let x     = cConv.long_px(Long);
+    let y     = cConv.lat_py(Lat);
+    con_gen(CON_FLAG,x,y,"blue",2);
+    con_gen(CON_FLAG,x + adjustX,y + adjustY,"blue",3);
 }
 // 現在地取得
 function gen_get() {navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt)}
@@ -963,7 +1002,7 @@ function mouse_up(e,mt) {
         adjustY = mouseUpY - setY;  // 調整 y
         a_set_gen.innerHTML = "現在地調整済"; 
         CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-        con_gen(CON_FLAG,mouseUpX,mouseUpY);
+        con_gen(CON_FLAG,mouseUpX,mouseUpY,"green",1);
         return;
     }
     if (can_mode == 3 && ms > con_long) {
