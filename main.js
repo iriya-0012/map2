@@ -108,10 +108,48 @@ class classText {
         document.body.removeChild(ele);             // コントロール削除
     }
 }
+// click
+can_log.addEventListener("click",(e) => {
+    let clickDate = new Date();
+    // mouse click 位置
+    mouseUpX = e.offsetX;
+    mouseUpY = e.offsetY;
+    if (can_mode == 1) {
+        // 現在地表示
+        adjustDt = clickDate;
+        adjustL = true;
+        adjustX = mouseUpX - setX;  // 調整 x
+        adjustY = mouseUpY - setY;  // 調整 y
+        in_set_gen.value = "現在地調整済"; 
+        CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+        con_gen(CON_FLAG,mouseUpX,mouseUpY,"green",1);
+        return;
+    }
+    if (can_mode == 3) {
+        // 計測位置表示
+        let long = cConv.px_long(mouseUpX);
+        let lat = cConv.py_lat(mouseUpY);
+        let str = `位置 X=${mouseUpX},Y=${mouseUpY},経度=${long},緯度=${lat}`;
+        if (mouseUpX < can_main.width - 400) {
+            con_box(CON_FLAG,mouseUpX,mouseUpY,400,40,"green",str);
+        } else {
+            con_box(CON_FLAG,mouseUpX - 400,mouseUpY,400,40,"green",str);
+        }
+        con_arc(CON_FLAG,mouseUpX,mouseUpY,1,"black"); 
+    }
+});
+// マウスdown
+can_log.addEventListener('mousedown',(e) => mouse_down(e,"m"));
+// マウスup
+can_log.addEventListener('mouseup',(e) => mouse_up(e,"m"));
+// タッチstart
+can_log.addEventListener("touchstart",(e) => mouse_down(e,"t"));
+// タッチend
+can_log.addEventListener("touchend",(e) => mouse_up(e,"t"));
 // 地図
-a_tab_map.addEventListener("click",() => screen_disp(1));
+in_tab_map.addEventListener("click",() => screen_disp(1));
 // 現在
-a_tab_gen.addEventListener("click",() => {
+in_tab_gen.addEventListener("click",() => {
     if (con_file == "") {
         alert("地図未選択");
         return;
@@ -124,10 +162,10 @@ a_tab_gen.addEventListener("click",() => {
     // 現在地取得処理
     navigator.geolocation.getCurrentPosition(gen_ok_b,gen_err,gen_opt)
     screen_disp(8);
-    can_mode = 3;
+    can_mode = 1;
 });
 // 表示
-a_tab_disp.addEventListener("click",() => {
+in_tab_disp.addEventListener("click",() => {
     if (con_file == "") {
         alert("地図未選択");
         return;
@@ -190,12 +228,12 @@ a_tab_disp.addEventListener("click",() => {
     can_mode = 5;    
 });
 // data
-a_tab_data.addEventListener("click",() => {
+in_tab_data.addEventListener("click",() => {
     sel_kno.value = "";
     screen_disp(11)
 });
 // 実行
-a_kno_exe.addEventListener("click",() => {
+in_kno_exe.addEventListener("click",() => {
     switch (sel_kno.value) {
         // 全保存
         case "saveAll":
@@ -249,7 +287,7 @@ a_kno_exe.addEventListener("click",() => {
     }        
 });
 // 地図File選択用
-a_map_file.addEventListener("click",() => {
+in_map_sel.addEventListener("click",() => {
     if (con_timerF) {
         alert("記録中は地図の選択不可");
         return;
@@ -257,7 +295,7 @@ a_map_file.addEventListener("click",() => {
     in_map_file.click();
 });
 // 現在地設定
-a_set_gen.addEventListener("click",() => {
+in_set_gen.addEventListener("click",() => {
     if (con_file == "") {
         alert("地図未選択");
         return;
@@ -279,12 +317,12 @@ a_set_gen.addEventListener("click",() => {
     can_mode = 1;
 });
 // 記録開始
-a_set_log.addEventListener("click",() => {
+in_set_log.addEventListener("click",() => {
     if (con_timerF) {
         // on --> off    
         clearInterval(con_timerId);
         con_timerF = false;
-        a_set_log.innerHTML = "記録停止";
+        in_set_log.value = "記録停止";
         return;
     }
     if (con_file == "") {
@@ -297,13 +335,13 @@ a_set_log.addEventListener("click",() => {
     }
     // off --> on
     con_timerF = true;
-    a_set_log.innerHTML = `記録間隔:${Number(con_timerG)}秒`;
+    in_set_log.value = `記録間隔:${Number(con_timerG)}秒`;
     // 現在地取得
     navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt);
     con_timerId = setInterval(gen_get,con_timerG * 1000); // 秒→ミリ秒
 });
 // 地図位置表示
-a_set_pos.addEventListener("click",() => {
+in_set_pos.addEventListener("click",() => {
     if (con_file == "") {
         alert("地図未選択");
         return;
@@ -317,7 +355,7 @@ a_set_pos.addEventListener("click",() => {
     can_mode = 3;
 });
 // 追加
-a_act_ins.addEventListener("click",() => {
+in_act_ins.addEventListener("click",() => {
     let key = in_act_key.value;
     let val = in_act_val.value;
     let rtn = confirm(`追加 キー:${key},内容:${val}`);
@@ -334,7 +372,7 @@ a_act_ins.addEventListener("click",() => {
     }
 });
 // 修正
-a_act_upd.addEventListener("click",() => {
+in_act_upd.addEventListener("click",() => {
     let key = in_act_key.value;
     let val = in_act_val.value;
     let rtn = confirm(`修正 キー:${key},内容:${val}`);
@@ -354,7 +392,7 @@ a_act_upd.addEventListener("click",() => {
     }
 });
 // 削除
-a_act_del.addEventListener("click",() => {
+in_act_del.addEventListener("click",() => {
     let key = in_act_key.value;
     let val = in_act_val.value;
     let rtn = confirm(`削除 キー:${key},内容:${val}`);
@@ -370,44 +408,6 @@ a_act_del.addEventListener("click",() => {
         tbo_head_flag_log_disp();
     }
 });
-// click
-can_log.addEventListener("click",(e) => {
-    let clickDate = new Date();
-    // mouse click 位置
-    mouseUpX = e.offsetX;
-    mouseUpY = e.offsetY;
-    if (can_mode == 1) {
-        // 現在地表示
-        adjustDt = clickDate;
-        adjustL = true;
-        adjustX = mouseUpX - setX;  // 調整 x
-        adjustY = mouseUpY - setY;  // 調整 y
-        a_set_gen.innerHTML = "現在地調整済"; 
-        CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-        con_gen(CON_FLAG,mouseUpX,mouseUpY,"green",1);
-        return;
-    }
-    if (can_mode == 3) {
-        // 計測位置表示
-        let long = cConv.px_long(mouseUpX);
-        let lat = cConv.py_lat(mouseUpY);
-        let str = `位置 X=${mouseUpX},Y=${mouseUpY},経度=${long},緯度=${lat}`;
-        if (mouseUpX < can_main.width - 400) {
-            con_box(CON_FLAG,mouseUpX,mouseUpY,400,40,"green",str);
-        } else {
-            con_box(CON_FLAG,mouseUpX - 400,mouseUpY,400,40,"green",str);
-        }
-        con_arc(CON_FLAG,mouseUpX,mouseUpY,1,"black"); 
-    }
-});
-// マウスdown
-can_log.addEventListener('mousedown',(e) => mouse_down(e,"m"));
-// マウスup
-can_log.addEventListener('mouseup',(e) => mouse_up(e,"m"));
-// タッチstart
-can_log.addEventListener("touchstart",(e) => mouse_down(e,"t"));
-// タッチend
-can_log.addEventListener("touchend",(e) => mouse_up(e,"t"));
 // 地図File選択
 in_map_file.addEventListener('change',(e) => {
     if (e.target.files.length == 0) return;
@@ -439,7 +439,7 @@ in_map_file.addEventListener('change',(e) => {
     }
     // 現在地を未設定
     con_posF  = false;
-    a_set_gen.innerHTML = "現在地未設定"; 
+    in_set_gen.value = "現在地未設定"; 
     // 調整を未設定
     adjustF = false;
     adjustL = false;
@@ -845,7 +845,7 @@ function gen_ok_a(gen) {
     adjustL  = true;          // 調整 log 出力
     adjustX  = 0;             // 調整 x
     adjustY  = 0;             // 調整 y
-    a_set_gen.innerHTML = "現在地設定済";   
+    in_set_gen.value = "現在地設定済";   
     con_gen(CON_FLAG,setX,setY,"green",1);
 }
 // 現在地取得処理
@@ -1020,14 +1020,14 @@ function mouse_up(e,mt) {
 }
 // 表示
 function screen_disp(screen) {
-    // 機能選択                    c k o 2 e m s k v a h f l s i
+    // 機能選択                   c k o 2 e m s k v a h f l s i
     if (screen == 1)  {screen_sub(0,0,0,0,0,1,1,0,0,0,0,0,0,0,1)}
     // 設定変更
     if (screen == 2)  {screen_sub(0,0,0,0,0,0,1,0,0,0,0,0,0,0,1)}
     // 地図選択    
     if (screen == 8)  {screen_sub(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0)}
     // データ操作   
-    if (screen == 11) {screen_sub(0,1,2,0,0,0,0,0,0,0,0,0,0,0,1)}
+    if (screen == 11) {screen_sub(0,1,2,0,0,0,0,0,0,0,0,0,0,0,1)}   
     // 選択表示
     if (screen == 12) {screen_sub(0,1,2,2,0,0,0,0,0,0,0,0,0,0,1)}
     // 全データ表示
@@ -1050,7 +1050,7 @@ function screen_sub(can,kno,ope,ope2,exe,map,set,key,val,all,head,flag,log,summ,
     div_kno.style.display     = x[kno];
     sel_kno.style.display     = x[ope];
     sel_kno_key.style.display = x[ope2];
-    a_kno_exe.style.display   = x[exe];
+    in_kno_exe.style.display  = x[exe];
     div_map.style.display     = x[map];
     div_set.style.display     = x[set];
     div_act1.style.display    = x[key];
