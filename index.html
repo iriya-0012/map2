@@ -2,16 +2,16 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
+  <meta name="viewport" content="width=device-width" >
   <title>Map2</title>
   <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body id="body">
   <div id="div_tab">
-    <a id="a_tab_map" class="c_a">地図</a>
-    <a id="a_tab_gen" class="c_a">現在</a>  
-    <a id="a_tab_disp" class="c_a">表示</a>
-    <a id="a_tab_data" class="c_a">data</a>
+    <input id="in_tab_map" type="button" class="c_tab" value="地図">
+    <input id="in_tab_gen" type="button" class="c_tab" value="現在">
+    <input id="in_tab_disp" type="button" class="c_tab" value="表示">
+    <input id="in_tab_data" type="button" class="c_tab" value="data">
   </div>
   <div id="div_can" class="c_can">
     <canvas id="can_main"></canvas>
@@ -20,7 +20,7 @@
     <canvas id="can_log"></canvas>     
   </div>
   <div id="div_kno">
-    <a>機能:</a>
+    <a>機能</a>
     <select id="sel_kno">
       <option value="dispAll">全表示</option>
       <option value="dispSel">選択表示</option>
@@ -32,32 +32,32 @@
       <option value="delSel">選択削除</option>
     </select>
     <select id="sel_kno_key"></select>
-    <input id="in_kno_file" type="file" style="display:none"></input>
-    <a id="a_kno_exe" class="c_a">実行</a>  
+    <input id="in_kno_file" type="file" style="display:none">
+    <input id="in_kno_exe" type="button" class="c_btn" value="実行">
   </div>
   <div id="div_map">
-    <a>地図:</a>
-    <a id="a_map_file" class="c_a">選択</a>
-    <input id="in_map_file" type="file" style="display:none"></input>
-    <input id="in_map_text" type="text"></input>
+    <a>地図</a>
+    <input id="in_map_sel" type="button" class="c_btn" value="選択">
+    <input id="in_map_file" type="file" style="display:none">
+    <input id="in_map_text" type="text">
     <select id="sel_map_ex"></select>
   </div>
   <div id="div_set">
-    <a>設定:</a>
-    <a id="a_set_gen" class="c_a">現在地未設定</a>
-    <a id="a_set_log" class="c_a">記録停止</a>
-    <a id="a_set_pos" class="c_a">位置計測</a>
+    <a>設定</a>
+    <input id="in_set_gen" type="button" class="c_btn" value="現在地未設定">
+    <input id="in_set_log" type="button" class="c_btn" value="記録停止">
+    <input id="in_set_pos" type="button" class="c_btn" value="位置計測">
   </div>
   <div id="div_act1">
-    <a>キー:</a>
-    <input type="text" id="in_act_key"></input>
-    <a id="a_act_ins" class="c_a">＋</a> 
-    <a id="a_act_upd" class="c_a">Ｃ</a>   
-    <a id="a_act_del" class="c_a">Ｄ</a>
+    <a>キー</a>
+    <input id="in_act_key" type="text">
+    <input id="in_act_ins" type="button" class="c_btn" value="＋">
+    <input id="in_act_upd" type="button" class="c_btn" value="Ｃ">
+    <input id="in_act_del" type="button" class="c_btn" value="Ｄ">
   </div>
   <div id="div_act2">
-    <a>内容:</a>
-    <input type="text" id="in_act_val"></input>  
+    <a>内容</a>
+    <input id="in_act_val" type="text">
   </div>
   <div id="div_all">
     <table class="border-solid">
