@@ -40,12 +40,63 @@ class classConvert {
 // フラグ
 class classFlag {
     constructor() {
+        this.value; // そのまま
         this.px;    // 丸位置 x
         this.py;    // 丸位置 y
         this.tx;    // 文字位置 x
         this.ty;    // 文字位置 y
         this.color; // 色
         this.text;  // 文字
+    }
+    // セット
+    set(text) {
+        this.value = text;
+        let v = text.split(/\s+/); // 連続する空白で分割
+        if (v.length == 4) { 
+            this.px    = v[0];
+            this.py    = v[1];
+            this.pos_color(v[2]);
+            this.text  = v[3];
+        } else {
+            this.px    = 50;
+            this.py    = 300;
+            this.tx    = 100;
+            this.ty    = 350;
+            this.color = "red";
+            this.text  = text;
+        }
+    }
+    // 位置・色
+    pos_color(str) {
+        // 色検出
+        this.color = "black";
+        let colorA = {
+		    b: "blue",
+		    f: "fuchsia",
+		    g: "green",
+		    m: "maroon",
+            p: "purple",
+            r: "red",
+            y: "yellow",
+        }
+        let strX = str;
+        for (let i = 0; i < str.length; i++) {
+            let s = str.substr(i,1);
+            if (s in colorA) {
+                this.color = colorA[s];
+                strX.replace(s,"");
+            }
+        }
+        // 吹出位置
+        this.tx = this.px;
+        this.ty = this.py;
+        for (let i = 0; i < strX.length; i++) {    
+            let s = strX.substr(i,1);
+            if (s == "n") this.ty = Number(this.ty) - 50;
+            if (s == "s") this.ty = Number(this.ty) + 50;
+            if (s == "w") this.tx = Number(this.tx) - 50;
+            if (s == "e") this.tx = Number(this.tx) + 50;
+        }
     }
 }
 // 現在地
@@ -87,9 +138,30 @@ class classLog {
         this.hm;    // 時分
         this.long;  // 経度
         this.lat;   // 緯度
-        this.x;     // x
-        this.y;     // y
+        this.x;     // 調整 x
+        this.y;     // 調整 y
         this.dir; 　// 吹出方向,t:上,b:下,l:左,r:右,無指定:右
+    }
+    // セット
+    set(key,value,ax,ay) {
+        let k = key.split("_");
+        let v = value.split(/\s+/); // 連続する空白で分割
+        this.md   = k[3];
+        this.hm   = k[4].substr(0,4);
+        this.long = v[0];
+        this.lat  = v[1];
+        if (k[4].substr(4,1) == "a") {
+            this.x = v[2];
+            this.y = v[3];
+        } else {
+            this.x = ax;
+            this.y = ay;            
+        }
+        if (v.length == 3) {
+            this.dir = v[2];
+        } else {
+            this.dir = "r";
+        }
     }
 }
 // Text処理
@@ -120,9 +192,37 @@ can_log.addEventListener("click",(e) => {
         adjustL = true;
         adjustX = mouseUpX - setX;  // 調整 x
         adjustY = mouseUpY - setY;  // 調整 y
-        in_set_gen.value = "現在地調整済"; 
         CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
         con_gen(CON_FLAG,mouseUpX,mouseUpY,"green",1);
+        return;
+    }
+    if (can_mode == 2) {
+        // flag配列チェック
+        flagApos = -1;
+        for (let i = 0; i < flagA.length; i++) {
+            let x = Math.abs(mouseUpX - flagA[i].px);
+            let y = Math.abs(mouseUpY - flagA[i].py);
+            if (x < 10 && y < 10) flagApos = i;
+        }
+        // Flag設定
+        if (flagApos == -1) {
+            con_arc(CON_FLAG,mouseUpX,mouseUpY,5,"green");
+            div_ctrl.style.left = mouseUpX - 60 + "px";
+            div_ctrl.style.top  = mouseUpY + 20 + "px";
+            div_ctrl.style.display = "block";
+            in_ctrl_text.value = `${mouseUpX} ${mouseUpY} seg Memo`;
+            in_ctrl_ins.style.display = "block";
+            in_ctrl_upd.style.display = "none";
+            in_ctrl_del.style.display = "none";
+        } else {
+            div_ctrl.style.left = mouseUpX - 60 + "px";
+            div_ctrl.style.top  = mouseUpY + 20 + "px";
+            div_ctrl.style.display = "block";
+            in_ctrl_text.value = flagA[flagApos].value;
+            in_ctrl_ins.style.display = "inline";
+            in_ctrl_upd.style.display = "inline";
+            in_ctrl_del.style.display = "inline";
+        }
         return;
     }
     if (can_mode == 3) {
@@ -146,354 +246,119 @@ can_log.addEventListener('mouseup',(e) => mouse_up(e,"m"));
 can_log.addEventListener("touchstart",(e) => mouse_down(e,"t"));
 // タッチend
 can_log.addEventListener("touchend",(e) => mouse_up(e,"t"));
-// 地図
-in_tab_map.addEventListener("click",() => screen_disp(1));
-// 現在
-in_tab_gen.addEventListener("click",() => {
-    if (con_file == "") {
-        alert("地図未選択");
-        return;
-    }
-    // 消去・地図表示
-    CON_MAIN.clearRect(0,0,can_main.width, can_main.height);
-    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-    CON_LOG.clearRect(0,0,can_main.width, can_main.height);
-    CON_MAIN.drawImage(cHead.img,0,0);
-    // 現在地取得処理
-    navigator.geolocation.getCurrentPosition(gen_ok_b,gen_err,gen_opt)
-    screen_disp(8);
-    can_mode = 1;
-});
-// 表示
-in_tab_disp.addEventListener("click",() => {
-    if (con_file == "") {
-        alert("地図未選択");
-        return;
-    }
-    if (!adjustF) {
-        alert("現在地未設定");
-        return;
-    }
-    // 消去・地図表示
-    CON_MAIN.clearRect(0,0,can_main.width, can_main.height);
-    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-    CON_LOG.clearRect(0,0,can_main.width, can_main.height);
-    CON_MAIN.drawImage(cHead.img,0,0);
-    // off --> on flag,log 配列作成
-    flagT = [];
-    logT  = [];
-    let strFlag = MAP_FLAG + cHead.id;
-    let strLog = MAP_LOG + cHead.id
-    for (let i = 0; i < localStorage.length; i++) {
-        let x = localStorage.key(i);
-        if (x.substr(0,10) == strFlag) flagT.push(x);
-        if (x.substr(0,10) == strLog) logT.push(x);
-    }
-    // flag 配列作成
-    flagT.sort();
-    flagA = [];
-    for (item of flagT) {
-        let val = localStorage.getItem(item);
-        let v   = val.split(/\s+/); // 連続する空白で分割
-        if (v.length == 6) {
-            cFlag       = new classFlag;
-            cFlag.px    = v[0];
-            cFlag.py    = v[1];
-            cFlag.tx    = change_pos_text(v[0],v[2]);
-            cFlag.ty    = change_pos_text(v[1],v[3]);
-            cFlag.color = v[4];
-            cFlag.text  = v[5];
-            flagA.push(cFlag);
-        }
-    }
-    // flag 描画
-    for (item of flagA) con_blow(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
-    // log 描画
-    logT.sort();
-    let aX = 0; //調整 x
-    let aY = 0; //調整 y
-    for (item of logT) {
-        let k    = item.split("_");
-        let val  = localStorage.getItem(item);
-        let v    = val.split(/\s+/); // 連続する空白で分割
-        let dir  = "r";
-        if (k[4].substr(4,1) == "a") {
-            aX = v[2];
-            aY = v[3];
-        }
-        if (v.length == 3) dir = v[2];
-        con_log(CON_LOG,k[4],v[0],aX,v[1],aY,dir);
-    }
-    screen_disp(8);
-    can_mode = 5;    
-});
-// data
-in_tab_data.addEventListener("click",() => {
-    sel_kno.value = "";
-    screen_disp(11)
-});
-// 実行
-in_kno_exe.addEventListener("click",() => {
-    switch (sel_kno.value) {
-        // 全保存
-        case "saveAll":
-            key_all = [];
-            val_all = [];
-            for (let i = 0; i < localStorage.length; i++) key_all.push(localStorage.key(i));
-            key_all.sort()
-            for (let i = 0; i < key_all.length; i++) val_all.push(localStorage.getItem(key_all[i]));
-            cText.save("map_all",key_all,val_all);
-            break;
-        // 選択保存
-        case "saveSel":
-            id = sel_kno_key.value.substr(8,2); 
-            key_all = [];
-            val_all = [];
-            // 登録データ取得
-            for (let i = 0; i < localStorage.length; i++) {
-                let k = localStorage.key(i);
-                if (k.substr(0,6) == MAP_ALL && k.substr(8,2) == id) key_all.push(k);
+// 機能選択
+sel_a.addEventListener("change",() => {
+    switch (sel_a.value) {
+        // 地図選択
+        case "aMap":
+            if (con_timerF) {
+                alert("記録中は地図の選択不可");
+                return;
             }
-            key_all.sort()
-            for (item of key_all) {
-                let val = localStorage.getItem(item);
-                val_all.push(val);
-            }
-            let idx = sel_kno_key.selectedIndex;
-            let txt  = sel_kno_key.options[idx].text;
-            cText.save(txt,key_all,val_all);
-            break;      
-        // 管理データ追加
-        case "addKan":
-            // 未登録データ追加
-            for (let i = 0; i < key_all.length; i++) localStorage.setItem(key_all[i],val_all[i]);
-            screen_disp(11);
-            sel_kno.value = "";
-            break;        
-        // 保存データ追加
-        case "addFile":
-            for (let i = 0; i < key_all.length; i++) localStorage.setItem(key_all[i],val_all[i]);
-            screen_disp(11);
-            sel_kno.value = "";
+            in_map_file.click();
             break;
-        // 選択削除   
-        case "delSel":
-            // 削除 flag log
-            for (item of flagT) localStorage.removeItem(item);
-            for (item of logT) localStorage.removeItem(item);
-            screen_disp(11);
-            sel_kno.value = "";
+        // 現在地設定
+        case "aGen":
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            // 消去・地図表示
+            con_clear();
+            screen_disp(8);
+            if (adjustF) {
+                // 取得済処理
+                CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+                con_gen(CON_FLAG,setX + adjustX,setY + adjustY,"green",1);
+            } else {
+                // 未取得処理
+                navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt);
+            }
+            can_mode = 1;
+            break;
+        // Flag設定
+        case "aFlag":
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            // 消去・地図表示
+            con_clear();
+            // flag 描画            
+            storage_get()
+            for (item of flagA) con_flag(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+            screen_disp(8);
+            can_mode = 2;       
+            break;
+        // 位置計測
+        case "aPos":
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            // 消去・地図表示
+            con_clear();
+            screen_disp(8);
+            can_mode = 3;
+            break;
+        // 記録開始
+        case "aStart":
+            if (con_timerF) {
+                alert("記録中");
+                return;
+            }
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            if (!adjustF) {
+                alert("現在地未設定");
+                return;
+            }
+            con_timerF = true;
+            screen_rec();
+            // 現在地取得
+            navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt);
+            con_timerId = setInterval(gen_get,con_timerG * 1000); // 秒→ミリ秒
+            break;
+        // 記録停止
+        case "aStop":
+            if (con_timerF) { 
+                clearInterval(con_timerId);
+                con_timerF = false;
+                screen_rec();
+            }
+            break;
+        // 地図表示
+        case "aDisp":
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            if (!adjustF) {
+                alert("現在地未設定");
+                return;
+            }
+            // 消去・地図表示
+            con_clear();
+            // flag 描画
+            storage_get();
+            for (item of flagA) con_flag(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+            // log 描画
+            for (item of logA) con_log(CON_LOG,item.hm,item.long,item.x,item.lat,item.y,item.dir);
+            screen_disp(8);
+            can_mode = 5;
+            break;
+        // Data処理
+        case "aData":
+            sel_data.value = "";
+            screen_disp(11)
             break;
     }        
 });
-// 地図File選択用
-in_map_sel.addEventListener("click",() => {
-    if (con_timerF) {
-        alert("記録中は地図の選択不可");
-        return;
-    }
-    in_map_file.click();
-});
-// 現在地設定
-in_set_gen.addEventListener("click",() => {
-    if (con_file == "") {
-        alert("地図未選択");
-        return;
-    }
-    // 消去・地図表示
-    CON_MAIN.clearRect(0,0,can_main.width, can_main.height);
-    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-    CON_LOG.clearRect(0,0,can_main.width, can_main.height);
-    CON_MAIN.drawImage(cHead.img,0,0);
-    screen_disp(8);
-    if (adjustF) {
-        // 取得済処理
-        CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-        con_gen(CON_FLAG,setX + adjustX,setY + adjustY,"green",1);
-    } else {
-        // 未取得処理
-        navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt)
-    }
-    can_mode = 1;
-});
-// 記録開始
-in_set_log.addEventListener("click",() => {
-    if (con_timerF) {
-        // on --> off    
-        clearInterval(con_timerId);
-        con_timerF = false;
-        in_set_log.value = "記録停止";
-        return;
-    }
-    if (con_file == "") {
-        alert("地図未選択");
-        return;
-    }
-    if (!adjustF) {
-        alert("現在地未設定");
-        return;
-    }
-    // off --> on
-    con_timerF = true;
-    in_set_log.value = `記録間隔:${Number(con_timerG)}秒`;
-    // 現在地取得
-    navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt);
-    con_timerId = setInterval(gen_get,con_timerG * 1000); // 秒→ミリ秒
-});
-// 地図位置表示
-in_set_pos.addEventListener("click",() => {
-    if (con_file == "") {
-        alert("地図未選択");
-        return;
-    }
-    // 消去・地図表示
-    CON_MAIN.clearRect(0,0,can_main.width, can_main.height);
-    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-    CON_LOG.clearRect(0,0,can_main.width, can_main.height);
-    CON_MAIN.drawImage(cHead.img,0,0);
-    screen_disp(8);
-    can_mode = 3;
-});
-// 追加
-in_act_ins.addEventListener("click",() => {
-    let key = in_act_key.value;
-    let val = in_act_val.value;
-    let rtn = confirm(`追加 キー:${key},内容:${val}`);
-    if (rtn) localStorage.setItem(key,val);
-    // 更新後表示
-    if (sel_kno.value == "dispAll") {
-        tbody_detete(tbo_all);    
-        tbo_all_disp();
-    } else {
-        tbody_detete(tbo_head);
-        tbody_detete(tbo_flag);    
-        tbody_detete(tbo_log);
-        tbo_head_flag_log_disp();
-    }
-});
-// 修正
-in_act_upd.addEventListener("click",() => {
-    let key = in_act_key.value;
-    let val = in_act_val.value;
-    let rtn = confirm(`修正 キー:${key},内容:${val}`);
-    if (rtn) {
-        localStorage.removeItem(key_save);
-        localStorage.setItem(key,val);
-    }
-    // 更新後表示
-    if (sel_kno.value == "dispAll") {
-        tbody_detete(tbo_all);  
-        tbo_all_disp();
-    } else {
-        tbody_detete(tbo_head);
-        tbody_detete(tbo_flag);
-        tbody_detete(tbo_log);
-        tbo_head_flag_log_disp();
-    }
-});
-// 削除
-in_act_del.addEventListener("click",() => {
-    let key = in_act_key.value;
-    let val = in_act_val.value;
-    let rtn = confirm(`削除 キー:${key},内容:${val}`);
-    if (rtn) {localStorage.removeItem(key)}
-    // 更新後表示
-    if (sel_kno.value == "dispAll") {
-        tbody_detete(tbo_all);  
-        tbo_all_disp();
-    } else {
-        tbody_detete(tbo_head);
-        tbody_detete(tbo_flag);    
-        tbody_detete(tbo_log);
-        tbo_head_flag_log_disp();
-    }
-});
-// 地図File選択
-in_map_file.addEventListener('change',(e) => {
-    if (e.target.files.length == 0) return;
-    // ファイルのブラウザ上でのURLを取得する
-    let file = e.target.files[0];
-    let file_url = window.URL.createObjectURL(file);
-    let file_name = file.name.replace(".png","");
-    in_map_text.value = file_name;
-    // option削除
-    let sel = sel_map_ex.options;
-    for (let i = sel.length - 1; i > -1; i--) {
-        if (!sel[i].selectid) sel_map_ex.removeChild(sel[i]);
-    }
-    // 地図情報検索
-    con_file = "";
-    for (let i = 0; i < headA.length; i++) {
-        if (headA[i].name == file_name) {
-            con_file = file_name;
-            let opt = document.createElement("option");
-            opt.text = headA[i].nameEx;
-            opt.value = i;
-            sel_map_ex.appendChild(opt);
-        }
-    }
-    // 地図未登録
-    if (con_file == "") {
-        alert(`地図未登録:${file_name}`);
-        return;
-    }
-    // 現在地を未設定
-    con_posF  = false;
-    in_set_gen.value = "現在地未設定"; 
-    // 調整を未設定
-    adjustF = false;
-    adjustL = false;
-    adjustX = 0;
-    adjustY = 0;
-    // 最後を選択
-    sel_map_ex.options[sel_map_ex.length - 1].selected = true;
-    cHead = headA[sel_map_ex.value];
-    // 地図登録済
-    image.src = file_url;
-    image.onload = () => {
-        cHead.img = image;
-        cHead.width = image.width;
-        cHead.height = image.height;
-        // 地図情報セット
-        can_main.width   = image.width;
-        can_main.height  = image.height;
-        can_flag.width   = image.width;
-        can_flag.height  = image.height;
-        can_log.width    = image.width;
-        can_log.height   = image.height;
-        can_error.width  = 400;
-        can_error.height = 200;
-        cConv.set(cHead.left,cHead.right,cHead.bottom,cHead.top,cHead.width,cHead.height);
-    }
-    info_cnt = 0;
-    info_save = "";
-    pre_info.innerHTML = "";
-});
-// 保存データ
-in_kno_file.addEventListener('change',(e) => {
-    if (e.target.files.length == 0) return;
-    // ファイルのブラウザ上でのURLを取得する
-    let file = e.target.files[0];
-    let fileReader = new FileReader();
-    fileReader.readAsText(file);
-    // ファイル読込終了後
-    fileReader.onload = () => {
-        key_all = [];
-        val_all = [];        
-        let strs = fileReader.result.split("\n");
-        for (str of strs) {
-            let text = str.split("\t");
-            if (text.length == 2) {
-                key_all.push(text[0]);
-                val_all.push(text[1]);
-                tbody_append(tbo_all,text[0],text[1]);
-            }
-        }
-    }
-});
-// 操作変更
-sel_kno.addEventListener("change",() => {
-    switch (sel_kno.value) {
+// Data処理
+sel_data.addEventListener("change",() => {
+    switch (sel_data.value) {
         // 全表示
         case "dispAll":
             tbody_detete(tbo_all);
@@ -503,7 +368,7 @@ sel_kno.addEventListener("change",() => {
         // 選択表示
         case "dispSel":
             screen_disp(12);
-            sel_kno_key_disp();     
+            sel_c_disp();     
             break;
         // 集計表示
         case "dispSumm":
@@ -520,7 +385,7 @@ sel_kno.addEventListener("change",() => {
         // 選択保存
         case "saveSel":
             screen_disp(12);
-            sel_kno_key_disp();
+            sel_c_disp();
             break;
         // 管理データ追加
         case "addKan":
@@ -561,7 +426,7 @@ sel_kno.addEventListener("change",() => {
             break;
         // 保存データ追加
         case "addFile":
-            in_kno_file.click();
+            in_data_file.click();
             // 行削除
             tbody_detete(tbo_all);
             screen_disp(81);
@@ -569,13 +434,13 @@ sel_kno.addEventListener("change",() => {
         // 選択削除
         case "delSel":
             screen_disp(12);
-            sel_kno_key_disp();
+            sel_c_disp();
             break;
     }        
 });
 // 選択変更
-sel_kno_key.addEventListener("change",() => {
-    switch (sel_kno.value) {
+sel_c.addEventListener("change",() => {
+    switch (sel_data.value) {
         // 選択表示
         case "dispSel":
             screen_disp(23);
@@ -602,6 +467,243 @@ sel_kno_key.addEventListener("change",() => {
             break;
     }
 });
+// 実行
+in_data_exe.addEventListener("click",() => {
+    switch (sel_data.value) {
+        // 全保存
+        case "saveAll":
+            key_all = [];
+            val_all = [];
+            for (let i = 0; i < localStorage.length; i++) key_all.push(localStorage.key(i));
+            key_all.sort()
+            for (let i = 0; i < key_all.length; i++) val_all.push(localStorage.getItem(key_all[i]));
+            cText.save("map_all",key_all,val_all);
+            break;
+        // 選択保存
+        case "saveSel":
+            id = sel_c.value.substr(8,2); 
+            key_all = [];
+            val_all = [];
+            // 登録データ取得
+            for (let i = 0; i < localStorage.length; i++) {
+                let k = localStorage.key(i);
+                if (k.substr(0,6) == MAP_ALL && k.substr(8,2) == id) key_all.push(k);
+            }
+            key_all.sort()
+            for (item of key_all) {
+                let val = localStorage.getItem(item);
+                val_all.push(val);
+            }
+            let idx = sel_c.selectedIndex;
+            let txt  = sel_c.options[idx].text;
+            cText.save(txt,key_all,val_all);
+            break;      
+        // 管理データ追加
+        case "addKan":
+            // 未登録データ追加
+            for (let i = 0; i < key_all.length; i++) localStorage.setItem(key_all[i],val_all[i]);
+            screen_disp(11);
+            sel_data.value = "";
+            break;        
+        // 保存データ追加
+        case "addFile":
+            for (let i = 0; i < key_all.length; i++) localStorage.setItem(key_all[i],val_all[i]);
+            screen_disp(11);
+            sel_data.value = "";
+            break;
+        // 選択削除   
+        case "delSel":
+            // 削除 flag log
+            for (item of flagT) localStorage.removeItem(item);
+            for (item of logT) localStorage.removeItem(item);
+            screen_disp(11);
+            sel_data.value = "";
+            break;
+    }        
+});
+// 追加
+in_act_ins.addEventListener("click",() => {
+    let key = in_act_key.value;
+    let val = in_act_val.value;
+    let rtn = confirm(`追加 キー:${key},内容:${val}`);
+    if (rtn) localStorage.setItem(key,val);
+    // 更新後表示
+    if (sel_data.value == "dispAll") {
+        tbody_detete(tbo_all);    
+        tbo_all_disp();
+    } else {
+        tbody_detete(tbo_head);
+        tbody_detete(tbo_flag);    
+        tbody_detete(tbo_log);
+        tbo_head_flag_log_disp();
+    }
+});
+// 修正
+in_act_upd.addEventListener("click",() => {
+    let key = in_act_key.value;
+    let val = in_act_val.value;
+    let rtn = confirm(`修正 キー:${key},内容:${val}`);
+    if (rtn) {
+        localStorage.removeItem(key_save);
+        localStorage.setItem(key,val);
+    }
+    // 更新後表示
+    if (sel_data.value == "dispAll") {
+        tbody_detete(tbo_all);  
+        tbo_all_disp();
+    } else {
+        tbody_detete(tbo_head);
+        tbody_detete(tbo_flag);
+        tbody_detete(tbo_log);
+        tbo_head_flag_log_disp();
+    }
+});
+// 削除
+in_act_del.addEventListener("click",() => {
+    let key = in_act_key.value;
+    let val = in_act_val.value;
+    let rtn = confirm(`削除 キー:${key},内容:${val}`);
+    if (rtn) {localStorage.removeItem(key)}
+    // 更新後表示
+    if (sel_data.value == "dispAll") {
+        tbody_detete(tbo_all);  
+        tbo_all_disp();
+    } else {
+        tbody_detete(tbo_head);
+        tbody_detete(tbo_flag);    
+        tbody_detete(tbo_log);
+        tbo_head_flag_log_disp();
+    }
+});
+// flag追加
+in_ctrl_ins.addEventListener("click",() => {
+    // 追加no検索
+    let free = 0;
+    for (let i = 0; i < flagT.length; i++) {
+        if (flagT[i].slice(-2) != i + 1) {
+            free = i + 1;
+            break;
+        }
+    }
+    if (free == 0) free = flagT.length + 1;
+    // 追加    
+    let no  = (`00${free}`).slice(-2);
+    let key = `${MAP_FLAG}${cHead.id}_${no}`;
+    localStorage.setItem(key,in_ctrl_text.value);
+    // 再表示
+    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);    
+    storage_get();
+    for (item of flagA) con_flag(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+    div_ctrl.style.display = "none";
+});
+// flag修正
+in_ctrl_upd.addEventListener("click",() => {
+    localStorage.setItem(flagT[flagApos],in_ctrl_text.value);
+    // 再表示
+    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);    
+    storage_get();
+    for (item of flagA) con_flag(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+    div_ctrl.style.display = "none";
+});
+// flag削除
+in_ctrl_del.addEventListener("click",() => {
+    localStorage.removeItem(flagT[flagApos]);
+    // 再表示
+    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);    
+    storage_get();
+    for (item of flagA) con_flag(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+    div_ctrl.style.display = "none";
+});
+// 保存データ
+in_data_file.addEventListener('change',(e) => {
+    if (e.target.files.length == 0) return;
+    // ファイルのブラウザ上でのURLを取得する
+    let file = e.target.files[0];
+    let fileReader = new FileReader();
+    fileReader.readAsText(file);
+    // ファイル読込終了後
+    fileReader.onload = () => {
+        key_all = [];
+        val_all = [];        
+        let strs = fileReader.result.split("\n");
+        for (str of strs) {
+            let text = str.split("\t");
+            if (text.length == 2) {
+                key_all.push(text[0]);
+                val_all.push(text[1]);
+                tbody_append(tbo_all,text[0],text[1]);
+            }
+        }
+    }
+});
+// 地図File選択
+in_map_file.addEventListener('change',(e) => {
+    if (e.target.files.length == 0) return;
+    // ファイルのブラウザ上でのURLを取得する
+    let file = e.target.files[0];
+    let file_url = window.URL.createObjectURL(file);
+    let file_name = file.name.replace(".png","");
+    in_map_text.value = file_name;
+    // option削除
+    let sel = sel_map_ex.options;
+    for (let i = sel.length - 1; i > -1; i--) {
+        if (!sel[i].selectid) sel_map_ex.removeChild(sel[i]);
+    }
+    // 地図情報検索
+    con_file = "";
+    for (let i = 0; i < headA.length; i++) {
+        if (headA[i].name == file_name) {
+            con_file = file_name;
+            let opt = document.createElement("option");
+            opt.text = headA[i].nameEx;
+            opt.value = i;
+            sel_map_ex.appendChild(opt);
+        }
+    }
+    // 地図未登録
+    if (con_file == "") {
+        alert(`地図未登録:${file_name}`);
+        return;
+    }
+    // 現在地を未設定
+    con_posF  = false;
+    // 調整を未設定
+    adjustF = false;
+    adjustL = false;
+    adjustX = 0;
+    adjustY = 0;
+    // 最後を選択
+    sel_map_ex.options[sel_map_ex.length - 1].selected = true;
+    cHead = headA[sel_map_ex.value];
+    // 地図読込
+    image.src = file_url;
+    image.onload = () => {
+        cHead.img = image;
+        cHead.width = image.width;
+        cHead.height = image.height;
+        // 地図情報セット
+        can_main.width   = image.width;
+        can_main.height  = image.height;
+        can_flag.width   = image.width;
+        can_flag.height  = image.height;
+        can_log.width    = image.width;
+        can_log.height   = image.height;
+        can_error.width  = 400;
+        can_error.height = 200;
+        cConv.set(cHead.left,cHead.right,cHead.bottom,cHead.top,cHead.width,cHead.height);
+        // 現在地設定へ
+        sel_a.value = "aGen";
+        // 消去・地図表示
+        con_clear();
+        screen_disp(8);
+        // 未取得処理
+        navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt);
+        can_mode = 1;
+    }
+    info_cnt = 0;
+    info_save = "";
+    pre_info.innerHTML = "";
+});
 // 同じ地図の別のグループ
 sel_map_ex.addEventListener("change",() => {
     cHead = headA[sel_map_ex.value];
@@ -611,7 +713,9 @@ sel_map_ex.addEventListener("change",() => {
 });
 // ロード時
 window.onload = () => {
+    sel_a.value = "";
     screen_disp(1);
+    screen_rec();
     // control 取得
     let ctrl = -1;   
     for (let i = 0; i < localStorage.length; i++) {
@@ -631,20 +735,21 @@ window.onload = () => {
     headA_set();
     if (!navigator.geolocation) info_disp("navigator.geolocation 位置情報取得 不可");
 }
-// flag 吹出の丸→文字位置計算
-function change_pos_text(pos,text) {
-    if (text == "=") return Number(pos);
-    if (text == "+") return Number(pos) + 50;
-    if (text == "-") return Number(pos) - 50;
-    return Number(pos) + Number(text);
+// 消去
+function con_clear() {
+    CON_MAIN.clearRect(0,0,can_main.width, can_main.height);
+    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+    CON_LOG.clearRect(0,0,can_main.width, can_main.height);
+    CON_MAIN.drawImage(cHead.img,0,0);
 }
 // 丸
 function con_arc(con,x,y,radius,color) {
     con.beginPath();
     con.strokeStyle = color;
-    con.lineWidth = 3;
+    con.fillStyle = color;
     con.arc(x,y,radius,0,Math.PI*2,true);
-    con.stroke();
+    con.fill();
+    con.stroke(); 
 }
 // 四角形
 function con_box(con,x,y,w,h,color,text) {
@@ -676,8 +781,8 @@ function con_box(con,x,y,w,h,color,text) {
     con.font      = "14px 'ＭＳ ゴシック'";
     con.fillText(text,x+12,y+25);
 }
-// 吹出
-function con_blow(con,px,py,tx,ty,color,text) {
+// 吹出 flag
+function con_flag(con,px,py,tx,ty,color,text) {
     con.font = CON_FONT;
     let len = con.measureText(text);    // 幅測定
     // 丸作成
@@ -845,7 +950,6 @@ function gen_ok_a(gen) {
     adjustL  = true;          // 調整 log 出力
     adjustX  = 0;             // 調整 x
     adjustY  = 0;             // 調整 y
-    in_set_gen.value = "現在地設定済";   
     con_gen(CON_FLAG,setX,setY,"green",1);
 }
 // 現在地取得処理
@@ -1018,41 +1122,50 @@ function mouse_up(e,mt) {
         con_arc(CON_FLAG,mouseUpX,mouseUpY,1,"black"); 
     }
 }
+// 記録表示
+function screen_rec() {
+    if (con_timerF) {
+        div_recY.style.display    = "inline";
+        div_recN.style.display    = "none";
+    } else {
+        div_recY.style.display    = "none";
+        div_recN.style.display    = "inline";
+    }
+}
 // 表示
 function screen_disp(screen) {
-    // 機能選択                   c k o 2 e m s k v a h f l s i
-    if (screen == 1)  {screen_sub(0,0,0,0,0,1,1,0,0,0,0,0,0,0,1)}
+    // 機能選択                   c m o 2 e k v a h f l s c i
+    if (screen == 1)  {screen_sub(0,0,0,0,0,0,0,0,0,0,0,0,0,1)}
     // 設定変更
-    if (screen == 2)  {screen_sub(0,0,0,0,0,0,1,0,0,0,0,0,0,0,1)}
+    if (screen == 2)  {screen_sub(0,0,0,0,0,0,0,0,0,0,0,0,0,1)}
     // 地図選択    
-    if (screen == 8)  {screen_sub(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0)}
+    if (screen == 8)  {screen_sub(1,2,0,0,0,0,0,0,0,0,0,0,0,0)}
     // データ操作   
-    if (screen == 11) {screen_sub(0,1,2,0,0,0,0,0,0,0,0,0,0,0,1)}   
+    if (screen == 11) {screen_sub(0,0,2,0,0,0,0,0,0,0,0,0,0,1)}   
     // 選択表示
-    if (screen == 12) {screen_sub(0,1,2,2,0,0,0,0,0,0,0,0,0,0,1)}
+    if (screen == 12) {screen_sub(0,0,2,2,0,0,0,0,0,0,0,0,0,1)}
     // 全データ表示
-    if (screen == 22) {screen_sub(0,1,2,0,0,0,0,1,1,1,0,0,0,0,1)}
+    if (screen == 22) {screen_sub(0,0,2,0,0,1,1,1,0,0,0,0,0,1)}
     // 選択表示
-    if (screen == 23) {screen_sub(0,1,2,2,0,0,0,1,1,0,1,1,1,0,1)}
+    if (screen == 23) {screen_sub(0,0,2,2,0,1,1,0,1,1,1,0,0,1)}
     // 集計表示
-    if (screen == 24) {screen_sub(0,1,2,0,0,0,0,0,0,0,0,0,0,1,1)}
+    if (screen == 24) {screen_sub(0,0,2,0,0,0,0,0,0,0,0,1,0,1)}
     // 選択追加  
-    if (screen == 80) {screen_sub(0,1,2,0,2,0,0,0,0,0,0,0,0,0,1)}
+    if (screen == 80) {screen_sub(0,0,2,0,2,0,0,0,0,0,0,0,0,1)}
     // 管理追加・全保存   
-    if (screen == 81) {screen_sub(0,1,2,0,2,0,0,0,0,1,0,0,0,0,1)}
+    if (screen == 81) {screen_sub(0,0,2,0,2,0,0,1,0,0,0,0,0,1)}
     // 選択保存   
-    if (screen == 82) {screen_sub(0,1,2,2,2,0,0,0,0,0,1,1,1,0,1)}
+    if (screen == 82) {screen_sub(0,0,2,2,2,0,0,0,1,1,1,0,0,1)}
 }
 // 表示sub
-function screen_sub(can,kno,ope,ope2,exe,map,set,key,val,all,head,flag,log,summ,info) {
+function screen_sub(can,map,ope,ope2,exe,key,val,all,head,flag,log,summ,ctrl,info) {
     let x = {0:"none",1:"block",2:"inline",7:"hidden",8:"visible"}
-    div_can.style.display     = x[can];   
-    div_kno.style.display     = x[kno];
-    sel_kno.style.display     = x[ope];
-    sel_kno_key.style.display = x[ope2];
-    in_kno_exe.style.display  = x[exe];
-    div_map.style.display     = x[map];
-    div_set.style.display     = x[set];
+    div_can.style.display     = x[can];
+    in_map_text.style.display = x[map];
+    sel_map_ex.style.display  = x[map];
+    sel_data.style.display    = x[ope];
+    sel_c.style.display       = x[ope2];
+    in_data_exe.style.display = x[exe];
     div_act1.style.display    = x[key];
     div_act2.style.display    = x[val];
     div_all.style.display     = x[all];
@@ -1060,16 +1173,13 @@ function screen_sub(can,kno,ope,ope2,exe,map,set,key,val,all,head,flag,log,summ,
     div_flag.style.display    = x[flag];
     div_log.style.display     = x[log];
     div_summ.style.display    = x[summ];
+    div_ctrl.style.display    = x[ctrl];
     div_info.style.display    = x[info];
     // 補正
-    if (map == 1 && set == 1) {
-        div_set.style.marginTop = "10px";
-    } else {
-        div_set.style.marginTop = "35px";  
-    }
+    screen_rec();
 }
-// sel_kno_key 表示
-function sel_kno_key_disp() {
+// sel_c 表示
+function sel_c_disp() {
     // 登録データ取得 head
     key_all = [];    
     for (let i = 0; i < localStorage.length; i++) {
@@ -1078,9 +1188,9 @@ function sel_kno_key_disp() {
     }
     key_all.sort();
     // option削除
-    let sel = sel_kno_key.options;
+    let sel = sel_c.options;
     for (let i = sel.length - 1; i > -1; i--) {
-        if (!sel[i].selectid) sel_kno_key.removeChild(sel[i]);
+        if (!sel[i].selectid) sel_c.removeChild(sel[i]);
     }
     // option追加         
     for (item of key_all) {
@@ -1094,9 +1204,42 @@ function sel_kno_key_disp() {
             opt.text = item;           
         }
         opt.value = item;
-        sel_kno_key.appendChild(opt);
+        sel_c.appendChild(opt);
     }
-    sel_kno_key.value = "";
+    sel_c.value = "";
+}
+// Web Storage 読込
+function storage_get() {
+    let strFlag = MAP_FLAG + cHead.id;
+    let strLog = MAP_LOG + cHead.id;
+    // flag,log 配列作成
+    flagT = [];
+    logT  = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        let x = localStorage.key(i);
+        if (x.substr(0,10) == strFlag) flagT.push(x);
+        if (x.substr(0,10) == strLog) logT.push(x);
+    }
+    // flag 配列作成
+    flagT.sort();
+    flagA = [];
+    for (item of flagT) {
+        cFlag = new classFlag;
+        cFlag.set(localStorage.getItem(item));
+        flagA.push(cFlag);
+    }
+    // log 配列作成
+    logT.sort();
+    logA = [];    
+    let aX = 0; //調整 x
+    let aY = 0; //調整 y   
+    for (item of logT) {
+        cLog = new classLog;
+        cLog.set(item,localStorage.getItem(item),aX,aY);
+        aX = cLog.x;
+        aY = cLog.y;
+        logA.push(cLog);
+    }
 }
 // Web Storage 出力
 function storage_log(map,id,dt,opt,long,lat,str) {
@@ -1105,8 +1248,8 @@ function storage_log(map,id,dt,opt,long,lat,str) {
     let HH = ("00" + (dt.getHours())).slice(-2);
     let MM = ("00" + (dt.getMinutes())).slice(-2);
     // log追加
-    let key  = `${map}${id}_${mm}${dd}_${HH}${MM}${opt}`;
-    let val  = `${long} ${lat} ${str}`;
+    let key = `${map}${id}_${mm}${dd}_${HH}${MM}${opt}`;
+    let val = `${long} ${lat} ${str}`;
     localStorage.setItem(key,val);
     con_log(CON_LOG,`${HH}${MM}`,long,adjustX,lat,adjustY,"r");
 }
@@ -1180,9 +1323,9 @@ function tbo_head_flag_log_disp() {
     headT = [];
     flagT = [];
     logT = [];
-    let strHead = MAP_HEAD + sel_kno_key.value.substr(8,2);    
-    let strFlag = MAP_FLAG + sel_kno_key.value.substr(8,2);
-    let strLog = MAP_LOG + sel_kno_key.value.substr(8,2);
+    let strHead = MAP_HEAD + sel_c.value.substr(8,2);    
+    let strFlag = MAP_FLAG + sel_c.value.substr(8,2);
+    let strLog = MAP_LOG + sel_c.value.substr(8,2);
     for (let i = 0; i < localStorage.length; i++) {
         let x = localStorage.key(i);
         switch (x.substr(0,10)) {
@@ -1281,7 +1424,7 @@ let adjustL = false;    // 調整 log 出力 true:必要 false:不要
 let adjustX = 0;        // 調整 x
 let adjustY = 0;        // 調整 y
 let can_rect  = can_main.getBoundingClientRect();
-let can_mode  = 0;      // 1:現在地設定、3:地図位置表示、5:地図表示
+let can_mode  = 0;      // 1:現在地設定、2:Flag設定、3:位置計測、5:地図表示
 let con_file  = "";     // 地図file名
 let con_long  = 2;      // 長押し(2秒)
 let con_posF  = false;  // 現在地設定
@@ -1289,6 +1432,7 @@ let con_timerId;        // タイマーid
 let con_timerF = false; // タイマー起動状態
 let con_timerG = 600;   // 現在地取得間隔(600秒)
 let flagA;              // flag Array
+let flagApos;           // flag Array 選択位置
 let flagT;              // flag Array
 let headA;              // head Array
 let headT;              // head Array
