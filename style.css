@@ -2,17 +2,21 @@ body            { background:#004000; color:white; font-size: 14px; font-weight:
 th, td          { border: solid 1px; padding: 0px 10px 0px 10px; }
 select          { background:#e0ffff; border: solid 3px; border-radius: 5px / 5px; color:green; height: 28px; }
 input           { background:#e0ffff; border: solid 3px; border-radius: 5px / 5px; color:green; height: 22px; }
-#in_map_text    { width: 68px; }
+#div_ctrl       { position: absolute; z-index: 1; }
+#div_tab        { position: fixed; top: 3px; z-index: 1; }
+#div_act1       { position: fixed; top: 35px; }
+#div_act2       { position: fixed; top: 67px; }
+#div_all, #div_head
+                { margin: 99px 0px 0px 0px; } 
+#div_summ, #div_info
+                { margin: 35px 0px 0px 0px; }
+#div_flag, #div_log
+                { margin: 5px 0px 0px 0px; }
 #in_act_key     { width: 205px; }
 #in_act_val     { width: 300px; }
-#div_tab        { position: fixed; left: 32px; top: 3px; z-index: 1; }
-#div_kno, #div_map, #div_set
-                { margin: 36px 0px 0px 0px; } 
-#div_act1, #div_act2, #div_all, #div_head, #div_flag, #div_log, #div_summ, #div_info
-                { margin: 5px 0px 0px 0px; } 
+#in_ctrl_text   { width: 300px; }
+#in_map_text    { width: 68px; }
 .c_btn          { background:#e0ffff; border: solid 3px; border-radius: 5px / 5px; color:green; height: 28px; margin: 0px 3px 0px 0px; padding: 0px 3px 0px 3px; }
 .c_btn:hover    { background:#70ffff; }
 .c_can          { position: relative; }
 .c_can > canvas { position: absolute; }
-.c_tab          { background:#e0ffff; border: solid 3px; border-radius: 5px / 5px; color:green; height: 28px; margin: 0px 3px 0px 0px; padding: 0px 3px 0px 3px; }
-.c_tab:hover    { background:#70ffff; }
