@@ -49,21 +49,26 @@ class classFlag {
         this.text;  // 文字
     }
     // セット
-    set(text) {
-        this.value = text;
-        let v = text.split(/\s+/); // 連続する空白で分割
-        if (v.length == 4) { 
+    set(txt) {
+        this.value = txt;
+        let v = txt.split(/\s+/); // 連続する空白で分割
+        if (v.length < 4) {
+            this.px    = 100;
+            this.py    = 300;
+            this.tx    = 150;
+            this.ty    = 350;
+            this.color = "red";
+            this.text  = `項目不足:${txt}`;
+        } else if (v.length == 4) { 
             this.px    = v[0];
             this.py    = v[1];
             this.pos_color(v[2]);
             this.text  = v[3];
         } else {
-            this.px    = 50;
-            this.py    = 300;
-            this.tx    = 100;
-            this.ty    = 350;
-            this.color = "red";
-            this.text  = text;
+            this.px    = v[0];
+            this.py    = v[1];
+            this.pos_color(v[2]);
+            this.text = txt.replace(v[0],"").replace(v[1],"").replace(v[2],"").trim();
         }
     }
     // 位置・色
@@ -98,6 +103,32 @@ class classFlag {
             if (s == "e") this.tx = Number(this.tx) + 50;
         }
     }
+    // 吹出 flag 描画
+    display(con,px,py,tx,ty,color,text) {
+        con.font = CON_FONT;
+        let len = con.measureText(text);    // 幅測定
+        // 丸作成
+        con.beginPath();
+        con.strokeStyle = color;            // 線の色
+        con.fillStyle = color;              // 塗りつぶし色
+        con.arc(px,py,5,0,Math.PI*2,true);
+        con.fill();                         // 塗りつぶし
+        con.stroke();
+        // 四角形作成
+        con.beginPath();
+        con.lineWidth = 2;    
+        con.fillStyle = color;
+        con.strokeRect(tx-5,ty-12,len.width+10,25);
+        // 文字列描画
+        con.fillText(text,tx,Number(ty)+8);
+        // 直線作成
+        con.beginPath();
+        con.lineWidth = 2;
+        con.strokeStyle = color;
+        con.moveTo(px,py);
+        con.lineTo(tx-5,ty);
+        con.stroke();
+    }
 }
 // 現在地
 class classGenzai {
@@ -110,6 +141,64 @@ class classGenzai {
         this.x;     // x
         this.y;     // y    
         this.m = "";// 現在地取得メッセージ
+    }
+    // 現在地 描画
+    display(con,px,py,color,mess) {
+        let x = Math.min(Math.max(0,px),can_main.width);
+        let y = Math.min(Math.max(0,py),can_main.height);
+        let background = "white";
+        switch (color) {
+            case "green":
+                background = "rgb(222,248,220)";
+                break;
+            case "red":
+                background = "rgb(255,192,203)";
+                break;
+            case "blue":
+                background = "rgb(224,255,255)";
+        }
+        con.font = CON_FONT;
+        // 丸
+        con.beginPath();
+        con.arc(x,y,15,0,Math.PI*2,true);
+        con.fillStyle = background;
+        con.fill();
+        con.strokeStyle = color;
+        con.lineWidth = 2;
+        con.stroke();
+        // 丸
+        con.beginPath();
+        con.arc(x,y,10,0,Math.PI*2,true);
+        con.fill();
+        con.stroke();
+        // 丸
+        con.beginPath();
+        con.arc(x,y,5,0,Math.PI*2,true);
+        con.fill();
+        con.stroke();
+        // 丸
+        con.beginPath();
+        con.arc(x,y,5,0,Math.PI*2,true);
+        con.fill();
+        con.stroke();
+        // 四角形作成
+        con.beginPath();
+        con.fillRect(x-50,y+30,280,50);
+        con.lineWidth = 2;
+        con.strokeRect(x-50,y+30,280,50);
+        // 文字列描画
+        con.fillStyle = color;
+        // メッセージ
+        switch (mess) {
+            case 1:
+                con.fillText("クリックにて現在地の変更",x-40,y+60); 
+                break;
+            case 2:
+                con.fillText("調整前の位置",x-40,y+60); 
+                break;
+            case 3:
+                con.fillText("調整後の位置",x-40,y+60); 
+        }
     }
 }
 // head内容
@@ -140,7 +229,7 @@ class classLog {
         this.lat;   // 緯度
         this.x;     // 調整 x
         this.y;     // 調整 y
-        this.dir; 　// 吹出方向,t:上,b:下,l:左,r:右,無指定:右
+        this.dir; 　// 吹出方向,e:東,w:西,s:南,n:北,無指定:東
     }
     // セット
     set(key,value,ax,ay) {
@@ -160,8 +249,82 @@ class classLog {
         if (v.length == 3) {
             this.dir = v[2];
         } else {
-            this.dir = "r";
+            this.dir = "e";
         }
+    }
+    // 吹出 log 描画
+    display(con,hm,long,ax,lat,ay,dir) {
+        // 色の選択
+        let color; 
+        if      (hm < "0600") {color = "black"}
+        else if (hm < "0900") {color = "blue"}
+        else if (hm < "1500") {color = "green"}
+        else if (hm < "1800") {color = "blue"}
+        else                  {color = "black"}
+        // 箱・線の位置
+        let text = `${hm.substr(0,2)}:${hm.substr(2,2)}`;
+        let bx;         // 箱・左上x
+        let by;         // 箱・左上y
+        let bh = 22;    // 箱・高
+        let bw = 74;    // 箱・幅
+        let lx;         // 線・終端x
+        let ly;         // 線・終端y
+        let llx = 50;   // 線・長x
+        let lly = 20;   // 線・長y 
+        let px = cConv.long_px(long) + Number(ax);  // 丸x
+        let py = cConv.lat_py(lat) + Number(ay);    // 丸y
+        // 吹出(log)方向での箱・線の位置 
+        switch (dir) {
+            case "n":
+                // 北
+                bx = px - bw / 2;
+                by = py - lly - bh;
+                lx = px;
+                ly = py - lly;
+                break;
+            case "s":
+                // 南
+                bx = px - bw / 2;
+                by = py + lly;
+                lx = px;
+                ly = py + lly;
+                break;
+            case "w":
+                // 西
+                bx = px - llx - bw;
+                by = py - bh / 2;
+                lx = px - llx;
+                ly = py;
+                break;
+            default:
+                // 東
+                bx = px + llx;
+                by = py - bh / 2; // 上に
+                lx = px + llx;
+                ly = py;
+        }
+        con.font = CON_FONT;
+        // 丸作成
+        con.beginPath();
+        con.strokeStyle = color;            // 線の色
+        con.fillStyle = color;              // 塗りつぶし色
+        con.arc(px,py,5,0,Math.PI*2,true);
+        con.fill();                         // 塗りつぶし
+        con.stroke();
+        // 四角形作成
+        con.beginPath();
+        con.lineWidth = 2;    
+        con.fillStyle = color;
+        con.strokeRect(bx,by,bw,bh);
+        // 文字列描画
+        con.fillText(text,bx+5,by+19);
+        // 直線作成
+        con.beginPath();
+        con.lineWidth = 2;
+        con.strokeStyle = color;
+        con.moveTo(px,py);
+        con.lineTo(lx,ly);
+        con.stroke();
     }
 }
 // Text処理
@@ -193,7 +356,7 @@ can_log.addEventListener("click",(e) => {
         adjustX = mouseUpX - setX;  // 調整 x
         adjustY = mouseUpY - setY;  // 調整 y
         CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-        con_gen(CON_FLAG,mouseUpX,mouseUpY,"green",1);
+        cGen.display(CON_FLAG,mouseUpX,mouseUpY,"green",1);
         return;
     }
     if (can_mode == 2) {
@@ -269,7 +432,7 @@ sel_a.addEventListener("change",() => {
             if (adjustF) {
                 // 取得済処理
                 CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-                con_gen(CON_FLAG,setX + adjustX,setY + adjustY,"green",1);
+                cGen.display(CON_FLAG,setX + adjustX,setY + adjustY,"green",1);
             } else {
                 // 未取得処理
                 navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt);
@@ -286,7 +449,7 @@ sel_a.addEventListener("change",() => {
             con_clear();
             // flag 描画            
             storage_get()
-            for (item of flagA) con_flag(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+            for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
             screen_disp(8);
             can_mode = 2;       
             break;
@@ -343,9 +506,9 @@ sel_a.addEventListener("change",() => {
             con_clear();
             // flag 描画
             storage_get();
-            for (item of flagA) con_flag(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+            for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
             // log 描画
-            for (item of logA) con_log(CON_LOG,item.hm,item.long,item.x,item.lat,item.y,item.dir);
+            for (item of logA) cLog.display(CON_LOG,item.hm,item.long,item.x,item.lat,item.y,item.dir);
             screen_disp(8);
             can_mode = 5;
             break;
@@ -593,7 +756,7 @@ in_ctrl_ins.addEventListener("click",() => {
     // 再表示
     CON_FLAG.clearRect(0,0,can_main.width, can_main.height);    
     storage_get();
-    for (item of flagA) con_flag(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+    for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
     div_ctrl.style.display = "none";
 });
 // flag修正
@@ -602,7 +765,7 @@ in_ctrl_upd.addEventListener("click",() => {
     // 再表示
     CON_FLAG.clearRect(0,0,can_main.width, can_main.height);    
     storage_get();
-    for (item of flagA) con_flag(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+    for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
     div_ctrl.style.display = "none";
 });
 // flag削除
@@ -611,7 +774,7 @@ in_ctrl_del.addEventListener("click",() => {
     // 再表示
     CON_FLAG.clearRect(0,0,can_main.width, can_main.height);    
     storage_get();
-    for (item of flagA) con_flag(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+    for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
     div_ctrl.style.display = "none";
 });
 // 保存データ
@@ -781,164 +944,6 @@ function con_box(con,x,y,w,h,color,text) {
     con.font      = "14px 'ＭＳ ゴシック'";
     con.fillText(text,x+12,y+25);
 }
-// 吹出 flag
-function con_flag(con,px,py,tx,ty,color,text) {
-    con.font = CON_FONT;
-    let len = con.measureText(text);    // 幅測定
-    // 丸作成
-    con.beginPath();
-    con.strokeStyle = color;            // 線の色
-    con.fillStyle = color;              // 塗りつぶし色
-    con.arc(px,py,5,0,Math.PI*2,true);
-    con.fill();                         // 塗りつぶし
-    con.stroke();
-    // 四角形作成
-    con.beginPath();
-    con.lineWidth = 2;    
-    con.fillStyle = color;
-    con.strokeRect(tx-5,ty-12,len.width+10,25);
-    // 文字列描画
-    con.fillText(text,tx,ty+8);
-    // 直線作成
-    con.beginPath();
-    con.lineWidth = 2;
-    con.strokeStyle = color;
-    con.moveTo(px,py);
-    con.lineTo(tx-5,ty);
-    con.stroke();
-}
-// 現在地
-function con_gen(con,px,py,color,mess) {
-    let x = Math.min(Math.max(0,px),can_main.width);
-    let y = Math.min(Math.max(0,py),can_main.height);
-    let background = "white";
-    switch (color) {
-        case "green":
-            background = "rgb(222,248,220)";
-            break;
-        case "red":
-            background = "rgb(255,192,203)";
-            break;
-        case "blue":
-            background = "rgb(224,255,255)";
-    }
-    con.font = CON_FONT;
-    // 丸
-    con.beginPath();
-    con.arc(x,y,15,0,Math.PI*2,true);
-    con.fillStyle = background;
-    con.fill();
-    con.strokeStyle = color;
-    con.lineWidth = 2;
-    con.stroke();
-    // 丸
-    con.beginPath();
-    con.arc(x,y,10,0,Math.PI*2,true);
-    con.fill();
-    con.stroke();
-    // 丸
-    con.beginPath();
-    con.arc(x,y,5,0,Math.PI*2,true);
-    con.fill();
-    con.stroke();
-    // 丸
-    con.beginPath();
-    con.arc(x,y,5,0,Math.PI*2,true);
-    con.fill();
-    con.stroke();
-    // 四角形作成
-    con.beginPath();
-    con.fillRect(x-50,y+30,280,50);
-    con.lineWidth = 2;
-    con.strokeRect(x-50,y+30,280,50);
-    // 文字列描画
-    con.fillStyle = color;
-    // メッセージ
-    switch (mess) {
-        case 1:
-            con.fillText("クリックにて現在地の変更",x-40,y+60); 
-            break;
-        case 2:
-            con.fillText("調整前の位置",x-40,y+60); 
-            break;
-        case 3:
-            con.fillText("調整後の位置",x-40,y+60); 
-    }
-}
-// 吹出 log
-function con_log(con,hm,long,aX,lat,aY,dir) {
-    // 色の選択
-    let color; 
-    if      (hm < "0600") {color = "black"}
-    else if (hm < "0900") {color = "blue"}
-    else if (hm < "1500") {color = "green"}
-    else if (hm < "1800") {color = "blue"}
-    else                  {color = "black"}
-    // 箱・線の位置
-    let text = `${hm.substr(0,2)}:${hm.substr(2,2)}`;
-    let bx;         // 箱・左上x
-    let by;         // 箱・左上y
-    let bh = 22;    // 箱・高
-    let bw = 74;    // 箱・幅
-    let lx;         // 線・終端x
-    let ly;         // 線・終端y
-    let llx = 80;   // 線・長x
-    let lly = 20;   // 線・長y 
-    let px = cConv.long_px(long) + Number(aX);  // 丸x
-    let py = cConv.lat_py(lat) + Number(aY);    // 丸y
-    // 吹出(log)方向での箱・線の位置 
-    switch (dir) {
-        case "t":
-            // 上
-            bx = px - bw / 2;
-            by = py - lly - bh;
-            lx = px;
-            ly = py - lly;
-            break;
-        case "b":
-            // 下
-            bx = px - bw / 2;
-            by = py + lly;
-            lx = px;
-            ly = py + lly;
-            break;
-        case "l":
-            // 左
-            bx = px - llx - bw;
-            by = py - bh / 2;
-            lx = px - llx;
-            ly = py;
-            break;
-        default:
-            // 右
-            bx = px + llx;
-            by = py - bh / 2; // 上に
-            lx = px + llx;
-            ly = py;
-    }
-    con.font = CON_FONT;
-    // 丸作成
-    con.beginPath();
-    con.strokeStyle = color;            // 線の色
-    con.fillStyle = color;              // 塗りつぶし色
-    con.arc(px,py,5,0,Math.PI*2,true);
-    con.fill();                         // 塗りつぶし
-    con.stroke();
-    // 四角形作成
-    con.beginPath();
-    con.lineWidth = 2;    
-    con.fillStyle = color;
-    con.strokeRect(bx,by,bw,bh);
-    // 文字列描画
-    con.fillText(text,bx+5,by+19);
-    // 直線作成
-    con.beginPath();
-    con.lineWidth = 2;
-    con.strokeStyle = color;
-    con.moveTo(px,py);
-    con.lineTo(lx,ly);
-    con.stroke();
-}
 // 現在地設定成功 1回目
 function gen_ok_a(gen) {
     setLong  = Math.round(gen.coords.longitude * 1000000) / 1000000; // 経度
@@ -950,7 +955,7 @@ function gen_ok_a(gen) {
     adjustL  = true;          // 調整 log 出力
     adjustX  = 0;             // 調整 x
     adjustY  = 0;             // 調整 y
-    con_gen(CON_FLAG,setX,setY,"green",1);
+    cGen.display(CON_FLAG,setX,setY,"green",1);
 }
 // 現在地取得処理
 function gen_ok_b(gen) {
@@ -958,8 +963,8 @@ function gen_ok_b(gen) {
     let Lat   = Math.round(gen.coords.latitude * 1000000) / 1000000;  // 緯度
     let x     = cConv.long_px(Long);
     let y     = cConv.lat_py(Lat);
-    con_gen(CON_FLAG,x,y,"blue",2);
-    con_gen(CON_FLAG,x + adjustX,y + adjustY,"blue",3);
+    cGen.display(CON_FLAG,x,y,"blue",2);
+    cGen.display(CON_FLAG,x + adjustX,y + adjustY,"blue",3);
 }
 // 現在地取得
 function gen_get() {navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt)}
@@ -1106,7 +1111,7 @@ function mouse_up(e,mt) {
         adjustY = mouseUpY - setY;  // 調整 y
         a_set_gen.innerHTML = "現在地調整済"; 
         CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-        con_gen(CON_FLAG,mouseUpX,mouseUpY,"green",1);
+        cGen.display(CON_FLAG,mouseUpX,mouseUpY,"green",1);
         return;
     }
     if (can_mode == 3 && ms > con_long) {
@@ -1251,7 +1256,7 @@ function storage_log(map,id,dt,opt,long,lat,str) {
     let key = `${map}${id}_${mm}${dd}_${HH}${MM}${opt}`;
     let val = `${long} ${lat} ${str}`;
     localStorage.setItem(key,val);
-    con_log(CON_LOG,`${HH}${MM}`,long,adjustX,lat,adjustY,"r");
+    cLog.display(CON_LOG,`${HH}${MM}`,long,adjustX,lat,adjustY,"r");
 }
 // tbo_all 表示
 function tbo_all_disp() {
