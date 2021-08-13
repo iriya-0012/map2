@@ -76,12 +76,16 @@ class classFlag {
         // 色検出
         this.color = "black";
         let colorA = {
+            a: "aqua",
 		    b: "blue",
 		    f: "fuchsia",
 		    g: "green",
+            l: "lime",
 		    m: "maroon",
+            o: "olive",
             p: "purple",
             r: "red",
+            t: "teal",
             y: "yellow",
         }
         let strX = str;
@@ -630,60 +634,6 @@ sel_c.addEventListener("change",() => {
             break;
     }
 });
-// 実行
-in_data_exe.addEventListener("click",() => {
-    switch (sel_data.value) {
-        // 全保存
-        case "saveAll":
-            key_all = [];
-            val_all = [];
-            for (let i = 0; i < localStorage.length; i++) key_all.push(localStorage.key(i));
-            key_all.sort()
-            for (let i = 0; i < key_all.length; i++) val_all.push(localStorage.getItem(key_all[i]));
-            cText.save("map_all",key_all,val_all);
-            break;
-        // 選択保存
-        case "saveSel":
-            id = sel_c.value.substr(8,2); 
-            key_all = [];
-            val_all = [];
-            // 登録データ取得
-            for (let i = 0; i < localStorage.length; i++) {
-                let k = localStorage.key(i);
-                if (k.substr(0,6) == MAP_ALL && k.substr(8,2) == id) key_all.push(k);
-            }
-            key_all.sort()
-            for (item of key_all) {
-                let val = localStorage.getItem(item);
-                val_all.push(val);
-            }
-            let idx = sel_c.selectedIndex;
-            let txt  = sel_c.options[idx].text;
-            cText.save(txt,key_all,val_all);
-            break;      
-        // 管理データ追加
-        case "addKan":
-            // 未登録データ追加
-            for (let i = 0; i < key_all.length; i++) localStorage.setItem(key_all[i],val_all[i]);
-            screen_disp(11);
-            sel_data.value = "";
-            break;        
-        // 保存データ追加
-        case "addFile":
-            for (let i = 0; i < key_all.length; i++) localStorage.setItem(key_all[i],val_all[i]);
-            screen_disp(11);
-            sel_data.value = "";
-            break;
-        // 選択削除   
-        case "delSel":
-            // 削除 flag log
-            for (item of flagT) localStorage.removeItem(item);
-            for (item of logT) localStorage.removeItem(item);
-            screen_disp(11);
-            sel_data.value = "";
-            break;
-    }        
-});
 // 追加
 in_act_ins.addEventListener("click",() => {
     let key = in_act_key.value;
@@ -777,6 +727,60 @@ in_ctrl_del.addEventListener("click",() => {
     for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
     div_ctrl.style.display = "none";
 });
+// 実行
+in_data_exe.addEventListener("click",() => {
+    switch (sel_data.value) {
+        // 全保存
+        case "saveAll":
+            key_all = [];
+            val_all = [];
+            for (let i = 0; i < localStorage.length; i++) key_all.push(localStorage.key(i));
+            key_all.sort()
+            for (let i = 0; i < key_all.length; i++) val_all.push(localStorage.getItem(key_all[i]));
+            cText.save("map_all",key_all,val_all);
+            break;
+        // 選択保存
+        case "saveSel":
+            id = sel_c.value.substr(8,2); 
+            key_all = [];
+            val_all = [];
+            // 登録データ取得
+            for (let i = 0; i < localStorage.length; i++) {
+                let k = localStorage.key(i);
+                if (k.substr(0,6) == MAP_ALL && k.substr(8,2) == id) key_all.push(k);
+            }
+            key_all.sort()
+            for (item of key_all) {
+                let val = localStorage.getItem(item);
+                val_all.push(val);
+            }
+            let idx = sel_c.selectedIndex;
+            let txt  = sel_c.options[idx].text;
+            cText.save(txt,key_all,val_all);
+            break;      
+        // 管理データ追加
+        case "addKan":
+            // 未登録データ追加
+            for (let i = 0; i < key_all.length; i++) localStorage.setItem(key_all[i],val_all[i]);
+            screen_disp(11);
+            sel_data.value = "";
+            break;        
+        // 保存データ追加
+        case "addFile":
+            for (let i = 0; i < key_all.length; i++) localStorage.setItem(key_all[i],val_all[i]);
+            screen_disp(11);
+            sel_data.value = "";
+            break;
+        // 選択削除   
+        case "delSel":
+            // 削除 flag log
+            for (item of flagT) localStorage.removeItem(item);
+            for (item of logT) localStorage.removeItem(item);
+            screen_disp(11);
+            sel_data.value = "";
+            break;
+    }        
+});
 // 保存データ
 in_data_file.addEventListener('change',(e) => {
     if (e.target.files.length == 0) return;
@@ -798,6 +802,20 @@ in_data_file.addEventListener('change',(e) => {
             }
         }
     }
+});
+// 記録 n
+in_data_n.addEventListener('click',() => {
+    con_timerF = true;
+    screen_rec();
+    // 現在地取得
+    navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt);
+    con_timerId = setInterval(gen_get,con_timerG * 1000); // 秒→ミリ秒 
+});
+// 記録 y
+in_data_y.addEventListener('click',() => {
+    con_timerF = false;
+    screen_rec();
+    clearInterval(con_timerId);
 });
 // 地図File選択
 in_map_file.addEventListener('change',(e) => {
@@ -1129,12 +1147,15 @@ function mouse_up(e,mt) {
 }
 // 記録表示
 function screen_rec() {
-    if (con_timerF) {
-        div_recY.style.display    = "inline";
-        div_recN.style.display    = "none";
+    if (con_file == "" || !adjustF) {
+        in_data_n.style.display = "none";
+        in_data_y.style.display = "none";
+    } else if (con_timerF) {
+        in_data_n.style.display = "none";
+        in_data_y.style.display = "inline";
     } else {
-        div_recY.style.display    = "none";
-        div_recN.style.display    = "inline";
+        in_data_n.style.display = "inline";
+        in_data_y.style.display = "none";
     }
 }
 // 表示
