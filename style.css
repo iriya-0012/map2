@@ -20,3 +20,4 @@ input           { background:#e0ffff; border: solid 3px; border-radius: 5px / 5p
 .c_btn:hover    { background:#70ffff; }
 .c_can          { position: relative; }
 .c_can > canvas { position: absolute; }
+.c_switch       { background:#00000000; border-style: none; height: 28px; margin: 0px 3px 0px 0px; padding: 0px 3px 0px 3px; }
