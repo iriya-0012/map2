@@ -1056,7 +1056,7 @@ function mouse_up(e,mt) {
     // mouse up 位置
     mouseUpX = e.offsetX;
     mouseUpY = e.offsetY;
-    if (can_mode == 1) {
+    if (can_mode == 1 && fLong) {
         // 現在地設定、表示
         adjustDt = mouseUpDate;
         adjustL = true;
