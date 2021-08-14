@@ -339,19 +339,74 @@ class classText {
         document.body.removeChild(ele);             // コントロール削除
     }
 }
+// click
+can_log.addEventListener("click",(e) => {
+    let clickDate = new Date();
+    // mouse click 位置
+    mouseUpX = e.offsetX;
+    mouseUpY = e.offsetY;
+    if (can_mode == 1) {
+        // 現在地設定、表示
+        adjustDt = clickDate;
+        adjustL = true;
+        adjustX = mouseUpX - setX;  // 調整 x
+        adjustY = mouseUpY - setY;  // 調整 y
+        CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+        cGen.display(CON_FLAG,mouseUpX,mouseUpY,"green",1);
+        return;
+    }
+    if (can_mode == 2) {
+        // flag配列チェック
+        flagApos = -1;
+        for (let i = 0; i < flagA.length; i++) {
+            let x = Math.abs(mouseUpX - flagA[i].px);
+            let y = Math.abs(mouseUpY - flagA[i].py);
+            if (x < 10 && y < 10) flagApos = i;
+        }
+        // Flag設定
+        if (flagApos == -1) {
+            con_arc(CON_FLAG,mouseUpX,mouseUpY,5,"green");
+            div_ctrl.style.left = mouseUpX - 60 + "px";
+            div_ctrl.style.top  = mouseUpY + 20 + "px";
+            div_ctrl.style.display = "block";
+            in_ctrl_text.value = `${mouseUpX} ${mouseUpY} seg Memo`;
+            in_ctrl_ins.style.display = "block";
+            in_ctrl_upd.style.display = "none";
+            in_ctrl_del.style.display = "none";
+        } else {
+            div_ctrl.style.left = mouseUpX - 60 + "px";
+            div_ctrl.style.top  = mouseUpY + 20 + "px";
+            div_ctrl.style.display = "block";
+            in_ctrl_text.value = flagA[flagApos].value;
+            in_ctrl_ins.style.display = "inline";
+            in_ctrl_upd.style.display = "inline";
+            in_ctrl_del.style.display = "inline";
+        }
+        return;
+    }
+    if (can_mode == 3) {
+        // 位置計測、表示
+        let long = cConv.px_long(mouseUpX);
+        let lat = cConv.py_lat(mouseUpY);
+        let str = `位置 X=${mouseUpX},Y=${mouseUpY},経度=${long},緯度=${lat}`;
+        if (mouseUpX < can_main.width - 400) {
+            con_box(CON_FLAG,mouseUpX,mouseUpY,400,40,"green",str);
+        } else {
+            con_box(CON_FLAG,mouseUpX - 400,mouseUpY,400,40,"green",str);
+        }
+        con_arc(CON_FLAG,mouseUpX,mouseUpY,1,"black"); 
+    }
+});
 // マウスdown
 can_log.addEventListener('mousedown',(e) => mouse_down(e,"m"));
 // マウスup
-can_log.addEventListener('mouseup',(e) => {
-    info_disp(`m: e.offsetX=${e.offsetX},e.offsetY=${e.offsetY};`);
-    mouse_up(e,"m");
-});
+can_log.addEventListener('mouseup',(e) => mouse_up(e.offsetX,e.offsetY,"m"));
 // タッチstart
 can_log.addEventListener("touchstart",(e) => mouse_down(e,"t"));
 // タッチend
 can_log.addEventListener("touchend",(e) => {
-    info_disp(`t: e.offsetX=${e.offsetX},e.offsetY=${e.offsetY};`);    
-    mouse_up(e,"t");
+    let obj = e.changedTouches[0];
+    mouse_up(obj.pageX,obj.pageY,"t");
 });
 // 機能選択
 sel_a.addEventListener("change",() => {
@@ -1054,79 +1109,12 @@ function mouse_down(e,mt) {
     mouseDownDate = new Date();
 }
 // マウスup
-function mouse_up(e,mt) {
-// マウス up - down 長押
+function mouse_up(x,y,mt) {
+    // マウス up - down 長押
     let mouseUpDate = new Date();
-    let fLong = false;
-    if (mouseUpDate.getTime() - mouseDownDate.getTime() > con_long) fLong = true;    
-    // mouse up 位置
-    mouseUpX = e.offsetX;
-    mouseUpY = e.offsetY;
-    info_disp(`x: e.offsetX=${e.offsetX},e.offsetY=${e.offsetY};`);
-    info_disp(`a: can_mode=${can_mode},fLong=${fLong};`);
-
-    if (can_mode == 1 && fLong) {
-        // 現在地設定、表示
-        info_disp(`b: mouseUpX=${mouseUpX},mouseUpY=${mouseUpY};`);
-        info_disp(`c: setX=${setX},setY=${setY};`);
-
-        adjustDt = mouseUpDate;
-        adjustL = true;
-        adjustX = mouseUpX - setX;  // 調整 x
-        adjustY = mouseUpY - setY;  // 調整 y
-        info_disp(`d: adjustX=${adjustX},adjustY=${adjustY};`);
-
-        CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-        info_disp(`e`);        
-        cGen.display(CON_FLAG,mouseUpX,mouseUpY,"green",1);
-        info_disp(`f`); 
-        return;
-    }
-    if (can_mode == 2) {
-        // flag配列チェック
-        flagApos = -1;
-        for (let i = 0; i < flagA.length; i++) {
-            let x = Math.abs(mouseUpX - flagA[i].px);
-            let y = Math.abs(mouseUpY - flagA[i].py);
-            if (x < 10 && y < 10) flagApos = i;
-        }
-        // Flag設定
-        if (flagApos == -1) {
-            con_arc(CON_FLAG,mouseUpX,mouseUpY,5,"green");
-            div_ctrl.style.left = mouseUpX - 60 + "px";
-            div_ctrl.style.top  = mouseUpY + 20 + "px";
-            div_ctrl.style.display = "block";
-            in_ctrl_text.value = `${mouseUpX} ${mouseUpY} seg Memo`;
-            in_ctrl_ins.style.display = "block";
-            in_ctrl_upd.style.display = "none";
-            in_ctrl_del.style.display = "none";
-        } else {
-            div_ctrl.style.left = mouseUpX - 60 + "px";
-            div_ctrl.style.top  = mouseUpY + 20 + "px";
-            div_ctrl.style.display = "block";
-            in_ctrl_text.value = flagA[flagApos].value;
-            in_ctrl_ins.style.display = "inline";
-            in_ctrl_upd.style.display = "inline";
-            in_ctrl_del.style.display = "inline";
-        }
-        return;
-    }
-    if (can_mode == 3) {
-        // 位置計測、表示
-        let long = cConv.px_long(mouseUpX);
-        let lat = cConv.py_lat(mouseUpY);
-        let str = `位置 X=${mouseUpX},Y=${mouseUpY},経度=${long},緯度=${lat}`;
-        if (mouseUpX < can_main.width - 400) {
-            con_box(CON_FLAG,mouseUpX,mouseUpY,400,40,"green",str);
-        } else {
-            con_box(CON_FLAG,mouseUpX - 400,mouseUpY,400,40,"green",str);
-        }
-        con_arc(CON_FLAG,mouseUpX,mouseUpY,1,"black"); 
-    }
-    if (can_mode == 5 && fLong) {
-        // 地図表示、現在地取得
-        navigator.geolocation.getCurrentPosition(gen_ok_b,gen_err,gen_opt);
-    }
+    if (mouseUpDate.getTime() - mouseDownDate.getTime() < con_long) return;
+    // 地図表示、現在地取得
+    if (can_mode == 5) navigator.geolocation.getCurrentPosition(gen_ok_b,gen_err,gen_opt);
 }
 // 記録表示
 function screen_rec() {
