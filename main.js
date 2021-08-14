@@ -345,7 +345,7 @@ can_log.addEventListener('mousedown',(e) => mouse_down(e,"m"));
 can_log.addEventListener('mouseup',(e) => {
     info_disp(`m: e.offsetX=${e.offsetX},e.offsetY=${e.offsetY};`);
     mouse_up(e,"m");
-}
+});
 // タッチstart
 can_log.addEventListener("touchstart",(e) => mouse_down(e,"t"));
 // タッチend
