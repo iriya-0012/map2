@@ -1049,21 +1049,30 @@ function mouse_down(e,mt) {
 }
 // マウスup
 function mouse_up(e,mt) {
-    // マウス up - down 長押
+// マウス up - down 長押
     let mouseUpDate = new Date();
     let fLong = false;
     if (mouseUpDate.getTime() - mouseDownDate.getTime() > con_long) fLong = true;    
     // mouse up 位置
     mouseUpX = e.offsetX;
     mouseUpY = e.offsetY;
+    info_disp(`a: can_mode=${can_mode},fLong=${fLong};`);
+
     if (can_mode == 1 && fLong) {
         // 現在地設定、表示
+        info_disp(`b: mouseUpX=${mouseUpX},mouseUpY=${mouseUpY};`);
+        info_disp(`c: setX=${setX},setY=${setY};`);
+
         adjustDt = mouseUpDate;
         adjustL = true;
         adjustX = mouseUpX - setX;  // 調整 x
         adjustY = mouseUpY - setY;  // 調整 y
+        info_disp(`d: adjustX=${adjustX},adjustY=${adjustY};`);
+
         CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+        info_disp(`e`);        
         cGen.display(CON_FLAG,mouseUpX,mouseUpY,"green",1);
+        info_disp(`f`); 
         return;
     }
     if (can_mode == 2) {
