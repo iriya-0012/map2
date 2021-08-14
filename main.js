@@ -1056,6 +1056,7 @@ function mouse_up(e,mt) {
     // mouse up 位置
     mouseUpX = e.offsetX;
     mouseUpY = e.offsetY;
+    info_disp(`x: e.offsetX=${e.offsetX},e.offsetY=${e.offsetY};`);
     info_disp(`a: can_mode=${can_mode},fLong=${fLong};`);
 
     if (can_mode == 1 && fLong) {
