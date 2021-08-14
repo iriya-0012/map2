@@ -342,11 +342,17 @@ class classText {
 // マウスdown
 can_log.addEventListener('mousedown',(e) => mouse_down(e,"m"));
 // マウスup
-can_log.addEventListener('mouseup',(e) => mouse_up(e,"m"));
+can_log.addEventListener('mouseup',(e) => {
+    info_disp(`m: e.offsetX=${e.offsetX},e.offsetY=${e.offsetY};`);
+    mouse_up(e,"m");
+}
 // タッチstart
 can_log.addEventListener("touchstart",(e) => mouse_down(e,"t"));
 // タッチend
-can_log.addEventListener("touchend",(e) => mouse_up(e,"t"));
+can_log.addEventListener("touchend",(e) => {
+    info_disp(`t: e.offsetX=${e.offsetX},e.offsetY=${e.offsetY};`);    
+    mouse_up(e,"t");
+});
 // 機能選択
 sel_a.addEventListener("change",() => {
     switch (sel_a.value) {
