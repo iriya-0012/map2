@@ -29,7 +29,6 @@ class classConvert {
     }
     // 緯度-->height 変換
     lat_py(lat) {
-      //return Math.round(this.height * (lat - this.bottom) / (this.top - this.bottom));    
         return Math.round(this.height * (this.top - lat) / (this.top - this.bottom));
     }
     // height-->緯度 変換
@@ -137,14 +136,38 @@ class classFlag {
 // 現在地
 class classGenzai {
     constructor() {
-        this.a;     // 高度
-        this.h;     // 方角
-        this.s;     // 速度
-        this.long;  // 経度
-        this.lat;   // 緯度
-        this.x;     // x
-        this.y;     // y    
-        this.m = "";// 現在地取得メッセージ
+        this.a;             // 現在地 高度
+        this.h;             // 現在地 方角
+        this.s;             // 現在地 速度
+        this.long;          // 現在地 経度
+        this.lat;           // 現在地 緯度
+        this.x;             // 現在地 x
+        this.y;             // 現在地 y    
+        this.m = "";        // 現在地取得メッセージ
+        this.adjDt;         // 調整位置取得、日付時間
+        this.adjF = false;  // 調整設定      true:済   false:未
+        this.adjL = false;  // 調整 log 出力 true:必要 false:不要
+        this.adjX = 0;      // 調整 x
+        this.adjY = 0;      // 調整 y
+    }
+    // セット
+    set(gen) {
+        this.a    = gen.coords.altitude;
+        this.h    = gen.coords.heading;
+        this.s    = gen.coords.speed;
+        this.long = Math.round(gen.coords.longitude * 1000000) / 1000000;
+        this.lat  = Math.round(gen.coords.latitude * 1000000) / 1000000;
+        this.x    = cConv.long_px(this.long);
+        this.y    = cConv.lat_py(this.lat);
+        this.m    = "";
+    }
+    // セット adjusr
+    adjust(flag,log,x,y) {
+        this.adjDt = new Date();
+        this.adjF  = flag;
+        this.adjL  = log;
+        this.adjX  = x;
+        this.adjY  = y;  
     }
     // 現在地 描画
     display(con,px,py,color,mess) {
@@ -215,6 +238,22 @@ class classHead {
         this.logCount;
         this.flagCount;
     };
+    // セット
+    set(key,value,id,name,nameEx,left,right,bottom,top) {
+        this.key        = key;
+        this.value      = value;
+        this.id         = id;
+        this.name       = name;
+        this.nameEx     = nameEx;
+        this.left       = left;
+        this.right      = right;
+        this.bottom     = bottom;
+        this.top        = top;
+        this.width      = 0;
+        this.height     = 0;
+        this.logCount   = 0;
+        this.flagCount  = 0;
+    }
 }
 // ログ
 class classLog {
@@ -341,16 +380,12 @@ class classText {
 }
 // click
 can_log.addEventListener("click",(e) => {
-    let clickDate = new Date();
     // mouse click 位置
     mouseUpX = e.offsetX;
     mouseUpY = e.offsetY;
     if (can_mode == 1) {
         // 現在地設定、表示
-        adjustDt = clickDate;
-        adjustL = true;
-        adjustX = mouseUpX - setX;  // 調整 x
-        adjustY = mouseUpY - setY;  // 調整 y
+        cGen.adjust(true,true,mouseUpX - cGen.x,mouseUpY - cGen.y)
         CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
         cGen.display(CON_FLAG,mouseUpX,mouseUpY,"green",1);
         return;
@@ -428,15 +463,35 @@ sel_a.addEventListener("change",() => {
             // 消去・地図表示
             con_clear();
             screen_disp(8);
-            if (adjustF) {
+            if (cGen.adjF) {
                 // 取得済処理
                 CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-                cGen.display(CON_FLAG,setX + adjustX,setY + adjustY,"green",1);
+                cGen.display(CON_FLAG,cGen.x + cGen.adjX,cGen.y + cGen.adjY,"green",1);
             } else {
                 // 未取得処理
                 navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt);
             }
             can_mode = 1;
+            break;
+        // 地図表示
+        case "aDisp":
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            if (!cGen.adjF) {
+                alert("現在地未設定");
+                return;
+            }
+            // 消去・地図表示
+            con_clear();
+            // flag 描画
+            storage_get();
+            for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+            // log 描画
+            for (item of logA) cLog.display(CON_LOG,item.hm,item.long,item.x,item.lat,item.y,item.dir);
+            screen_disp(8);
+            can_mode = 5;
             break;
         // Flag設定
         case "aFlag":
@@ -447,7 +502,7 @@ sel_a.addEventListener("change",() => {
             // 消去・地図表示
             con_clear();
             // flag 描画            
-            storage_get()
+            storage_get();
             for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
             screen_disp(8);
             can_mode = 2;       
@@ -473,7 +528,7 @@ sel_a.addEventListener("change",() => {
                 alert("地図未選択");
                 return;
             }
-            if (!adjustF) {
+            if (!cGen.adjF) {
                 alert("現在地未設定");
                 return;
             }
@@ -491,30 +546,10 @@ sel_a.addEventListener("change",() => {
                 screen_rec();
             }
             break;
-        // 地図表示
-        case "aDisp":
-            if (con_file == "") {
-                alert("地図未選択");
-                return;
-            }
-            if (!adjustF) {
-                alert("現在地未設定");
-                return;
-            }
-            // 消去・地図表示
-            con_clear();
-            // flag 描画
-            storage_get();
-            for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
-            // log 描画
-            for (item of logA) cLog.display(CON_LOG,item.hm,item.long,item.x,item.lat,item.y,item.dir);
-            screen_disp(8);
-            can_mode = 5;
-            break;
         // Data処理
         case "aData":
             sel_data.value = "";
-            screen_disp(11)
+            screen_disp(11);
             break;
     }        
 });
@@ -621,7 +656,7 @@ sel_c.addEventListener("change",() => {
             break;
         // 選択削除
         case "delSel":
-            screen_disp(82);
+            screen_disp(83);
             tbody_detete(tbo_head);
             tbody_detete(tbo_log);
             tbody_detete(tbo_flag);
@@ -766,15 +801,23 @@ in_data_exe.addEventListener("click",() => {
             screen_disp(11);
             sel_data.value = "";
             break;
-        // 選択削除   
-        case "delSel":
-            // 削除 flag log
-            for (item of flagT) localStorage.removeItem(item);
-            for (item of logT) localStorage.removeItem(item);
-            screen_disp(11);
-            sel_data.value = "";
-            break;
     }        
+});
+// 選択削除 flag
+in_data_flag.addEventListener("click",() => {
+    for (item of flagT) localStorage.removeItem(item);
+    tbody_detete(tbo_head);
+    tbody_detete(tbo_log);
+    tbody_detete(tbo_flag);
+    tbo_head_flag_log_disp();
+});
+// 選択削除 log
+in_data_log.addEventListener("click",() => {
+    for (item of logT) localStorage.removeItem(item);
+    tbody_detete(tbo_head);
+    tbody_detete(tbo_log);
+    tbody_detete(tbo_flag);
+    tbo_head_flag_log_disp();
 });
 // 保存データ
 in_data_file.addEventListener('change',(e) => {
@@ -844,10 +887,7 @@ in_map_file.addEventListener('change',(e) => {
     // 現在地を未設定
     con_posF  = false;
     // 調整を未設定
-    adjustF = false;
-    adjustL = false;
-    adjustX = 0;
-    adjustY = 0;
+    cGen.adjust(false,false,0,0);
     // 最後を選択
     sel_map_ex.options[sel_map_ex.length - 1].selected = true;
     cHead = headA[sel_map_ex.value];
@@ -957,45 +997,28 @@ function con_box(con,x,y,w,h,color,text) {
     con.font      = "14px 'ＭＳ ゴシック'";
     con.fillText(text,x+12,y+25);
 }
+// 現在地取得
+function gen_get() {navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt)}
 // 現在地設定成功 1回目
 function gen_ok_a(gen) {
-    setLong  = Math.round(gen.coords.longitude * 1000000) / 1000000; // 経度
-    setLat   = Math.round(gen.coords.latitude * 1000000) / 1000000;  // 緯度
-    setX     = cConv.long_px(setLong);
-    setY     = cConv.lat_py(setLat);
-    adjustDt = new Date();    // 調整、日付時間
-    adjustF  = true;          // 調整 取得済
-    adjustL  = true;          // 調整 log 出力
-    adjustX  = 0;             // 調整 x
-    adjustY  = 0;             // 調整 y
-    cGen.display(CON_FLAG,setX,setY,"green",1);
+    cGen.set(gen);
+    cGen.adjust(true,true,0,0);
+    cGen.display(CON_FLAG,cGen.x,cGen.y,"green",1);
 }
 // 現在地取得処理
 function gen_ok_b(gen) {
-    let Long  = Math.round(gen.coords.longitude * 1000000) / 1000000; // 経度
-    let Lat   = Math.round(gen.coords.latitude * 1000000) / 1000000;  // 緯度
-    let x     = cConv.long_px(Long);
-    let y     = cConv.lat_py(Lat);
-    cGen.display(CON_FLAG,x,y,"blue",2);
-    cGen.display(CON_FLAG,x + adjustX,y + adjustY,"blue",3);
+    cGen.set(gen);
+    cGen.display(CON_FLAG,cGen.x,cGen.y,"blue",2);
+    cGen.display(CON_FLAG,cGen.x + cGen.adjX,cGen.y + cGen.adjY,"blue",3);
 }
-// 現在地取得
-function gen_get() {navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt)}
 // 現在地取得成功
 function gen_ok_l(gen) {
-    cGen.a    = gen.coords.altitude; // 高度
-    cGen.h    = gen.coords.heading;  // 方角
-    cGen.s    = gen.coords.speed;    // 速度
-    cGen.long = Math.round(gen.coords.longitude * 1000000) / 1000000; // 経度
-    cGen.lat  = Math.round(gen.coords.latitude * 1000000) / 1000000;  // 緯度
-    cGen.x    = cConv.long_px(cGen.long);
-    cGen.y    = cConv.lat_py(cGen.lat);
-    cGen.m    = "";                  // 現在地取得メッセージ   
-    if (adjustL) {
+    cGen.set(gen);
+    if (cGen.adjL) {
         // 設定地 log 出力
-        info_disp(`設定:${setLong} ${setLat} ${adjustX} ${adjustY}`);
-        storage_log(MAP_LOG,cHead.id,adjustDt,"a",setLong,setLat,`${adjustX} ${adjustY}`);
-        adjustL = false;
+        info_disp(`設定:${cGen.long} ${cGen.lat} ${cGen.adjX} ${cGen.adjY}`);
+        storage_log(MAP_LOG,cHead.id,cGen.adjDt,"a",cGen.long,cGen.lat,`${cGen.adjX} ${cGen.adjY}`);
+        cGen.adjL = false;
     }
     // 現在地 log 出力
     let dt = new Date();
@@ -1054,36 +1077,12 @@ function headA_set() {
         let val = localStorage.getItem(item);
         let v   = val.split(/\s+/); // 連続する空白で分割
         if (k.length == 4 && k[3] != "" && v.length == 4) {
-            cHead           = new classHead;
-            cHead.key       = item;
-            cHead.value     = val;
-            cHead.id        = k[2];
-            cHead.left      = v[0];
-            cHead.right     = v[1];
-            cHead.bottom    = v[2];
-            cHead.top       = v[3];
-            cHead.width     = 0;
-            cHead.height    = 0;
-            cHead.logCount  = 0;
-            cHead.flagCount = 0;
-            cHead.name      = k[3];
-            cHead.nameEx    = k[3];
+            cHead = new classHead;
+            cHead.set(item,val,k[2],k[3],k[3],v[0],v[1],v[2],v[3]);
             headA.push(cHead);
         } else if (k.length == 5 && k[3] != "" && k[4] != "" && v.length == 4) {
-            cHead           = new classHead;
-            cHead.key       = item;
-            cHead.value     = val;
-            cHead.id        = k[2];
-            cHead.left      = v[0];
-            cHead.right     = v[1];
-            cHead.bottom    = v[2];
-            cHead.top       = v[3];
-            cHead.width     = 0;
-            cHead.height    = 0;
-            cHead.logCount  = 0;
-            cHead.flagCount = 0;            
-            cHead.name      = k[3];
-            cHead.nameEx    = `${k[3]}_${k[4]}`;
+            cHead = new classHead;
+            cHead.set(item,val,k[2],k[3],`${k[3]}_${k[4]}`,v[0],v[1],v[2],v[3]);
             headA.push(cHead);
         }
     }
@@ -1105,7 +1104,10 @@ function info_disp(info) {
 // マウスdown
 function mouse_down(e,mt) {
     // 3本指タッチは戻る
-    if (mt == "t" && e.targetTouches.length > 2) screen_disp(1);  
+    if (mt == "t" && e.targetTouches.length > 2) {
+        sel_a.value = "";
+        screen_disp(1);
+    }  
     mouseDownDate = new Date();
 }
 // マウスup
@@ -1118,7 +1120,7 @@ function mouse_up(x,y,mt) {
 }
 // 記録表示
 function screen_rec() {
-    if (con_file == "" || !adjustF) {
+    if (con_file == "" || !cGen.adjF) {
         in_data_n.style.display = "none";
         in_data_y.style.display = "none";
     } else if (con_timerF) {
@@ -1131,47 +1133,51 @@ function screen_rec() {
 }
 // 表示
 function screen_disp(screen) {
-    // 機能選択                   c m o 2 e k v a h f l s c i
-    if (screen == 1)  {screen_sub(0,0,0,0,0,0,0,0,0,0,0,0,0,1)}
+    // 機能選択                   c m o 2 e d k v a h f l s c i
+    if (screen == 1)  {screen_sub(0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)}
     // 設定変更
-    if (screen == 2)  {screen_sub(0,0,0,0,0,0,0,0,0,0,0,0,0,1)}
+    if (screen == 2)  {screen_sub(0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)}
     // 地図選択    
-    if (screen == 8)  {screen_sub(1,2,0,0,0,0,0,0,0,0,0,0,0,0)}
+    if (screen == 8)  {screen_sub(1,2,0,0,0,0,0,0,0,0,0,0,0,0,0)}
     // データ操作   
-    if (screen == 11) {screen_sub(0,0,2,0,0,0,0,0,0,0,0,0,0,1)}   
+    if (screen == 11) {screen_sub(0,0,2,0,0,0,0,0,0,0,0,0,0,0,1)}   
     // 選択表示
-    if (screen == 12) {screen_sub(0,0,2,2,0,0,0,0,0,0,0,0,0,1)}
+    if (screen == 12) {screen_sub(0,0,2,2,0,0,0,0,0,0,0,0,0,0,1)}
     // 全データ表示
-    if (screen == 22) {screen_sub(0,0,2,0,0,1,1,1,0,0,0,0,0,1)}
+    if (screen == 22) {screen_sub(0,0,2,0,0,0,1,1,1,0,0,0,0,0,1)}
     // 選択表示
-    if (screen == 23) {screen_sub(0,0,2,2,0,1,1,0,1,1,1,0,0,1)}
+    if (screen == 23) {screen_sub(0,0,2,2,0,0,1,1,0,1,1,1,0,0,1)}
     // 集計表示
-    if (screen == 24) {screen_sub(0,0,2,0,0,0,0,0,0,0,0,1,0,1)}
+    if (screen == 24) {screen_sub(0,0,2,0,0,0,0,0,0,0,0,0,1,0,1)}
     // 選択追加  
-    if (screen == 80) {screen_sub(0,0,2,0,2,0,0,0,0,0,0,0,0,1)}
+    if (screen == 80) {screen_sub(0,0,2,0,2,0,0,0,0,0,0,0,0,0,1)}
     // 管理追加・全保存   
-    if (screen == 81) {screen_sub(0,0,2,0,2,0,0,1,0,0,0,0,0,1)}
+    if (screen == 81) {screen_sub(0,0,2,0,2,0,0,0,1,0,0,0,0,0,1)}
     // 選択保存   
-    if (screen == 82) {screen_sub(0,0,2,2,2,0,0,0,1,1,1,0,0,1)}
+    if (screen == 82) {screen_sub(0,0,2,2,2,0,0,0,0,1,1,1,0,0,1)}
+    // 選択削除
+    if (screen == 83) {screen_sub(0,0,2,2,0,2,0,0,0,1,1,1,0,0,1)}
 }
 // 表示sub
-function screen_sub(can,map,ope,ope2,exe,key,val,all,head,flag,log,summ,ctrl,info) {
+function screen_sub(can,map,ope,ope2,exe,del,key,val,all,head,flag,log,summ,ctrl,info) {
     let x = {0:"none",1:"block",2:"inline",7:"hidden",8:"visible"}
-    div_can.style.display     = x[can];
-    in_map_text.style.display = x[map];
-    sel_map_ex.style.display  = x[map];
-    sel_data.style.display    = x[ope];
-    sel_c.style.display       = x[ope2];
-    in_data_exe.style.display = x[exe];
-    div_act1.style.display    = x[key];
-    div_act2.style.display    = x[val];
-    div_all.style.display     = x[all];
-    div_head.style.display    = x[head];
-    div_flag.style.display    = x[flag];
-    div_log.style.display     = x[log];
-    div_summ.style.display    = x[summ];
-    div_ctrl.style.display    = x[ctrl];
-    div_info.style.display    = x[info];
+    div_can.style.display      = x[can];
+    in_map_text.style.display  = x[map];
+    sel_map_ex.style.display   = x[map];
+    sel_data.style.display     = x[ope];
+    sel_c.style.display        = x[ope2];
+    in_data_exe.style.display  = x[exe];
+    in_data_flag.style.display = x[del];
+    in_data_log.style.display  = x[del];
+    div_act1.style.display     = x[key];
+    div_act2.style.display     = x[val];
+    div_all.style.display      = x[all];
+    div_head.style.display     = x[head];
+    div_flag.style.display     = x[flag];
+    div_log.style.display      = x[log];
+    div_summ.style.display     = x[summ];
+    div_ctrl.style.display     = x[ctrl];
+    div_info.style.display     = x[info];
     // 補正
     screen_rec();
 }
@@ -1248,7 +1254,7 @@ function storage_log(map,id,dt,opt,long,lat,str) {
     let key = `${map}${id}_${mm}${dd}_${HH}${MM}${opt}`;
     let val = `${long} ${lat} ${str}`;
     localStorage.setItem(key,val);
-    cLog.display(CON_LOG,`${HH}${MM}`,long,adjustX,lat,adjustY,"r");
+    cLog.display(CON_LOG,`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
 }
 // tbo_all 表示
 function tbo_all_disp() {
@@ -1415,11 +1421,6 @@ let cLog      = new classLog;
 let cHead     = new classHead;
 let cText     = new classText;
 let image     = new Image;
-let adjustDt;           // 調整位置取得、日付時間
-let adjustF = false;    // 調整設定      true:済   false:未
-let adjustL = false;    // 調整 log 出力 true:必要 false:不要
-let adjustX = 0;        // 調整 x
-let adjustY = 0;        // 調整 y
 let can_rect  = can_main.getBoundingClientRect();
 let can_mode  = 0;      // 1:現在地設定、2:Flag設定、3:位置計測、5:地図表示
 let con_file  = "";     // 地図file名
@@ -1442,10 +1443,6 @@ let logT;               // log Array
 let mouseDownDate;      // mouse down日付時間
 let mouseUpX;           // mouse up x
 let mouseUpY;           // mouse up y
-let setLong;            // 設定 long
-let setLat;             // 設定 lat
-let setX;               // 設定 x
-let setY;               // 設定 y
 let scale_pos;
 let val_all;
 let val_save;
