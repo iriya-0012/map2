@@ -283,7 +283,7 @@ class classLog {
         }
     }
     // 吹出 log 描画
-    display(con,hm,long,ax,lat,ay,dir) {
+    display(con,lr,hm,long,ax,lat,ay,dir) {
         // 色の選択
         let color; 
         if      (hm < "0600") {color = "black"}
@@ -341,20 +341,23 @@ class classLog {
         con.arc(px,py,5,0,Math.PI*2,true);
         con.fill();                         // 塗りつぶし
         con.stroke();
-        // 四角形作成
-        con.beginPath();
-        con.lineWidth = 2;    
-        con.fillStyle = color;
-        con.strokeRect(bx,by,bw,bh);
-        // 文字列描画
-        con.fillText(text,bx+5,by+19);
-        // 直線作成
-        con.beginPath();
-        con.lineWidth = 2;
-        con.strokeStyle = color;
-        con.moveTo(px,py);
-        con.lineTo(lx,ly);
-        con.stroke();
+        // Log , x0分の時、吹出あり
+        if (lr == "l" || hm.substr(3,1) == "0") {
+            // 四角形作成
+            con.beginPath();
+            con.lineWidth = 2;    
+            con.fillStyle = color;
+            con.strokeRect(bx,by,bw,bh);
+            // 文字列描画
+            con.fillText(text,bx+5,by+19);
+            // 直線作成
+            con.beginPath();
+            con.lineWidth = 2;
+            con.strokeStyle = color;
+            con.moveTo(px,py);
+            con.lineTo(lx,ly);
+            con.stroke();           
+        }
     }
 }
 // Text処理
@@ -470,6 +473,8 @@ sel_a.addEventListener("change",() => {
             break;
         // 地図表示
         case "aDisp":
+        // 経路表示
+        case "aRoute":
             if (con_file == "") {
                 alert("地図未選択");
                 return;
@@ -483,10 +488,16 @@ sel_a.addEventListener("change",() => {
             // flag 描画
             storage_get();
             for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
-            // log 描画
-            for (item of logA) cLog.display(CON_LOG,item.hm,item.long,item.x,item.lat,item.y,item.dir);
+            if (sel_a.value == "aDisp") {
+                // log 描画
+                for (item of logA) cLog.display(CON_LOG,"l",item.hm,item.long,item.x,item.lat,item.y,item.dir);
+                can_mode = 5;            
+            } else {
+                // route 描画
+                for (item of logA) cLog.display(CON_LOG,"r",item.hm,item.long,item.x,item.lat,item.y,item.dir);
+                can_mode = 6;
+            }
             screen_disp(8);
-            can_mode = 5;
             break;
         // Flag設定
         case "aFlag":
@@ -1104,7 +1115,7 @@ function mouse_up(x,y,mt) {
     let mouseUpDate = new Date();
     if (mouseUpDate.getTime() - mouseDownDate.getTime() < con_long) return;
     // 地図表示、現在地取得
-    if (can_mode == 5) navigator.geolocation.getCurrentPosition(gen_ok_b,gen_err,gen_opt);
+    if (can_mode == 5 || can_mode == 6) navigator.geolocation.getCurrentPosition(gen_ok_b,gen_err,gen_opt);
 }
 // 記録表示
 function screen_rec() {
@@ -1242,7 +1253,12 @@ function storage_log(map,id,dt,opt,long,lat,str) {
     let key = `${map}${id}_${mm}${dd}_${HH}${MM}${opt}`;
     let val = `${long} ${lat} ${str}`;
     localStorage.setItem(key,val);
-    cLog.display(CON_LOG,`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
+    if (sel_a.value == "aDisp") {
+        cLog.display(CON_LOG,"l",`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
+    } else {
+        cLog.display(CON_LOG,"r",`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
+    }
+ 
 }
 // tbo_all 表示
 function tbo_all_disp() {
