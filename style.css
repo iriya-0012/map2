@@ -16,8 +16,10 @@ input           { background:#e0ffff; border: solid 3px; border-radius: 5px / 5p
 #in_act_val     { width: 300px; }
 #in_ctrl_text   { width: 300px; }
 #in_map_text    { width: 68px; }
-.c_btn          { background:#e0ffff; border: solid 3px; border-radius: 5px / 5px; color:green; height: 28px; margin: 0px 3px 0px 0px; padding: 0px 3px 0px 3px; }
+.c_btn          { background:#e0ffff; border: solid 3px; border-radius: 5px / 5px; color:green; height: 28px;
+                  margin: 0px 3px 0px 0px; padding: 0px 3px 0px 3px; }
 .c_btn:hover    { background:#70ffff; }
 .c_can          { position: relative; }
 .c_can > canvas { position: absolute; }
-.c_switch       { background:#00000000; border-style: none; height: 28px; margin: 0px 3px 0px 0px; padding: 0px 3px 0px 3px; }
+.c_switch       { background:#00000000; border-style: none; height: 28px; margin: 0px 3px 0px 0px;
+                  padding: 0px 3px 0px 3px; }
