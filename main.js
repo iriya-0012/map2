@@ -232,9 +232,6 @@ class classHead {
         this.right;
         this.bottom;
         this.top;
-        this.width;
-        this.height;
-        this.img;
         this.logCount;
         this.flagCount;
     };
@@ -249,8 +246,6 @@ class classHead {
         this.right      = right;
         this.bottom     = bottom;
         this.top        = top;
-        this.width      = 0;
-        this.height     = 0;
         this.logCount   = 0;
         this.flagCount  = 0;
     }
@@ -884,6 +879,10 @@ in_map_file.addEventListener('change',(e) => {
         alert(`地図未登録:${file_name}`);
         return;
     }
+    // info 初期化
+    info_cnt = 0;
+    info_save = "";
+    pre_info.innerHTML = "";
     // 現在地を未設定
     con_posF  = false;
     // 調整を未設定
@@ -891,22 +890,19 @@ in_map_file.addEventListener('change',(e) => {
     // 最後を選択
     sel_map_ex.options[sel_map_ex.length - 1].selected = true;
     cHead = headA[sel_map_ex.value];
-    // 地図読込
-    image.src = file_url;
-    image.onload = () => {
-        cHead.img = image;
-        cHead.width = image.width;
-        cHead.height = image.height;
+    // 地図読込  
+    cImage.src = file_url;
+    cImage.onload = () => {
         // 地図情報セット
-        can_main.width   = image.width;
-        can_main.height  = image.height;
-        can_flag.width   = image.width;
-        can_flag.height  = image.height;
-        can_log.width    = image.width;
-        can_log.height   = image.height;
+        can_main.width   = cImage.width;
+        can_main.height  = cImage.height;
+        can_flag.width   = cImage.width;
+        can_flag.height  = cImage.height;
+        can_log.width    = cImage.width;
+        can_log.height   = cImage.height;
         can_error.width  = 400;
         can_error.height = 200;
-        cConv.set(cHead.left,cHead.right,cHead.bottom,cHead.top,cHead.width,cHead.height);
+        cConv.set(cHead.left,cHead.right,cHead.bottom,cHead.top,cImage.width,cImage.height);
         // 現在地設定へ
         sel_a.value = "aGen";
         // 消去・地図表示
@@ -916,17 +912,9 @@ in_map_file.addEventListener('change',(e) => {
         navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt);
         can_mode = 1;
     }
-    info_cnt = 0;
-    info_save = "";
-    pre_info.innerHTML = "";
 });
 // 同じ地図の別のグループ
-sel_map_ex.addEventListener("change",() => {
-    cHead = headA[sel_map_ex.value];
-    cHead.img = image;
-    cHead.width = image.width;
-    cHead.height = image.height;
-});
+sel_map_ex.addEventListener("change",() => cHead = headA[sel_map_ex.value]);
 // ロード時
 window.onload = () => {
     sel_a.value = "";
@@ -956,7 +944,7 @@ function con_clear() {
     CON_MAIN.clearRect(0,0,can_main.width, can_main.height);
     CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
     CON_LOG.clearRect(0,0,can_main.width, can_main.height);
-    CON_MAIN.drawImage(cHead.img,0,0);
+    CON_MAIN.drawImage(cImage,0,0);
 }
 // 丸
 function con_arc(con,x,y,radius,color) {
@@ -1077,13 +1065,13 @@ function headA_set() {
         let val = localStorage.getItem(item);
         let v   = val.split(/\s+/); // 連続する空白で分割
         if (k.length == 4 && k[3] != "" && v.length == 4) {
-            cHead = new classHead;
-            cHead.set(item,val,k[2],k[3],k[3],v[0],v[1],v[2],v[3]);
-            headA.push(cHead);
+            xHead = new classHead;
+            xHead.set(item,val,k[2],k[3],k[3],v[0],v[1],v[2],v[3]);
+            headA.push(xHead);
         } else if (k.length == 5 && k[3] != "" && k[4] != "" && v.length == 4) {
-            cHead = new classHead;
-            cHead.set(item,val,k[2],k[3],`${k[3]}_${k[4]}`,v[0],v[1],v[2],v[3]);
-            headA.push(cHead);
+            xHead = new classHead;
+            xHead.set(item,val,k[2],k[3],`${k[3]}_${k[4]}`,v[0],v[1],v[2],v[3]);
+            headA.push(xHead);
         }
     }
 }
@@ -1317,8 +1305,9 @@ function tbo_summ_disp() {
             } 
         }
     }
-    // 表示 
-    for (cHead of headA) tbody_append(tbo_summ,cHead.key,`${cHead.logCount} , ${cHead.flagCount}`);
+    // 表示
+    let xHead = new classHead;
+    for (xHead of headA) tbody_append(tbo_summ,xHead.key,`${xHead.logCount} , ${xHead.flagCount}`);
 }
 // tbo_head, tbo_log 表示
 function tbo_head_flag_log_disp() {
@@ -1420,7 +1409,7 @@ let cGen      = new classGenzai;
 let cLog      = new classLog;
 let cHead     = new classHead;
 let cText     = new classText;
-let image     = new Image;
+let cImage    = new Image;
 let can_rect  = can_main.getBoundingClientRect();
 let can_mode  = 0;      // 1:現在地設定、2:Flag設定、3:位置計測、5:地図表示
 let con_file  = "";     // 地図file名
