@@ -1105,7 +1105,7 @@ function mouse_down(e,mt) {
     // 3本指タッチは戻る
     if (mt == "t" && e.targetTouches.length > 2) {
         sel_a.value = "";
-        screen_disp(1);
+        sel_a.click();
     }  
     mouseDownDate = new Date();
 }
