@@ -341,8 +341,30 @@ class classLog {
         con.arc(px,py,5,0,Math.PI*2,true);
         con.fill();                         // 塗りつぶし
         con.stroke();
-        // Log , x0分の時、吹出あり
-        if (lr == "l" || hm.substr(3,1) == "0") {
+        // 吹出必要判定
+        let draw = false;
+        let a1 = draw_f;
+        let a2 = draw_hm;
+        switch (lr) {
+            // log
+            case "l":
+                draw = true;
+                break;
+            case "r":
+                if (draw_f) {
+                    draw_f = false;
+                    draw_hm = Number(hm) + 10;  // 次は10分後
+                    draw = true;
+                } else if (draw_hm < hm) {
+                    draw_hm += 10;              // 次は10分後
+                    draw = true;
+                }
+                break;                
+        }
+        //console.info(`draw_f=${a1},draw_hm=${a2},hm=${hm},draw_hm=${draw_hm},draw=${draw}`);
+
+        // 吹出作成
+        if (draw) {
             // 四角形作成
             con.beginPath();
             con.lineWidth = 2;    
@@ -358,6 +380,23 @@ class classLog {
             con.lineTo(lx,ly);
             con.stroke();           
         }
+        // Log , x0分の時、吹出あり
+        /*if (lr == "l" || hm.substr(3,1) == "0") {
+            // 四角形作成
+            con.beginPath();
+            con.lineWidth = 2;    
+            con.fillStyle = color;
+            con.strokeRect(bx,by,bw,bh);
+            // 文字列描画
+            con.fillText(text,bx+5,by+19);
+            // 直線作成
+            con.beginPath();
+            con.lineWidth = 2;
+            con.strokeStyle = color;
+            con.moveTo(px,py);
+            con.lineTo(lx,ly);
+            con.stroke();           
+        }*/
     }
 }
 // Text処理
@@ -383,8 +422,8 @@ can_log.addEventListener("click",(e) => {
     mouseUpY = e.offsetY;
     if (can_mode == 1) {
         // 現在地設定、表示
-        cGen.adjust(true,true,mouseUpX - cGen.x,mouseUpY - cGen.y)
         CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+        cGen.adjust(true,true,mouseUpX - cGen.x,mouseUpY - cGen.y); 
         cGen.display(CON_FLAG,mouseUpX,mouseUpY,"green",1);
         return;
     }
@@ -433,13 +472,19 @@ can_log.addEventListener("click",(e) => {
 // マウスdown
 can_log.addEventListener('mousedown',(e) => mouse_down(e,"m"));
 // マウスup
-can_log.addEventListener('mouseup',(e) => mouse_up(e.offsetX,e.offsetY,"m"));
+can_log.addEventListener('mouseup',(e) => {
+    mouseUpX = e.offsetX;
+    mouseUpY = e.offsetY;
+    mouse_up();
+});
 // タッチstart
 can_log.addEventListener("touchstart",(e) => mouse_down(e,"t"));
 // タッチend
 can_log.addEventListener("touchend",(e) => {
     let obj = e.changedTouches[0];
-    mouse_up(obj.pageX,obj.pageY,"t");
+    mouseUpX = obj.pageX;
+    mouseUpY = obj.pageY;
+    mouse_up();
 });
 // 機能選択
 sel_a.addEventListener("change",() => {
@@ -490,10 +535,12 @@ sel_a.addEventListener("change",() => {
             for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
             if (sel_a.value == "aDisp") {
                 // log 描画
+                draw_f = true;
                 for (item of logA) cLog.display(CON_LOG,"l",item.hm,item.long,item.x,item.lat,item.y,item.dir);
                 can_mode = 5;            
             } else {
                 // route 描画
+                draw_f = true;
                 for (item of logA) cLog.display(CON_LOG,"r",item.hm,item.long,item.x,item.lat,item.y,item.dir);
                 can_mode = 6;
             }
@@ -1006,9 +1053,11 @@ function gen_ok_a(gen) {
 }
 // 現在地取得処理
 function gen_ok_b(gen) {
+    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
     cGen.set(gen);
+    cGen.adjust(true,true,mouseUpX - cGen.x,mouseUpY - cGen.y);
     cGen.display(CON_FLAG,cGen.x,cGen.y,"blue",2);
-    cGen.display(CON_FLAG,cGen.x + cGen.adjX,cGen.y + cGen.adjY,"blue",3);
+    cGen.display(CON_FLAG,cGen.x + cGen.adjX,cGen.y + cGen.adjY,"green",3);
 }
 // 現在地取得成功
 function gen_ok_l(gen) {
@@ -1110,7 +1159,7 @@ function mouse_down(e,mt) {
     mouseDownDate = new Date();
 }
 // マウスup
-function mouse_up(x,y,mt) {
+function mouse_up() {
     // マウス up - down 長押
     let mouseUpDate = new Date();
     if (mouseUpDate.getTime() - mouseDownDate.getTime() < con_long) return;
@@ -1134,8 +1183,6 @@ function screen_rec() {
 function screen_disp(screen) {
     // 機能選択                   c m o 2 e d k v a h f l s c i
     if (screen == 1)  {screen_sub(0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)}
-    // 設定変更
-    if (screen == 2)  {screen_sub(0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)}
     // 地図選択    
     if (screen == 8)  {screen_sub(1,2,0,0,0,0,0,0,0,0,0,0,0,0,0)}
     // データ操作   
@@ -1148,8 +1195,6 @@ function screen_disp(screen) {
     if (screen == 23) {screen_sub(0,0,2,2,0,0,1,1,0,1,1,1,0,0,1)}
     // 集計表示
     if (screen == 24) {screen_sub(0,0,2,0,0,0,0,0,0,0,0,0,1,0,1)}
-    // 選択追加  
-    if (screen == 80) {screen_sub(0,0,2,0,2,0,0,0,0,0,0,0,0,0,1)}
     // 管理追加・全保存   
     if (screen == 81) {screen_sub(0,0,2,0,2,0,0,0,1,0,0,0,0,0,1)}
     // 選択保存   
@@ -1257,8 +1302,7 @@ function storage_log(map,id,dt,opt,long,lat,str) {
         cLog.display(CON_LOG,"l",`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
     } else {
         cLog.display(CON_LOG,"r",`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
-    }
- 
+    } 
 }
 // tbo_all 表示
 function tbo_all_disp() {
@@ -1427,7 +1471,7 @@ let cHead     = new classHead;
 let cText     = new classText;
 let cImage    = new Image;
 let can_rect  = can_main.getBoundingClientRect();
-let can_mode  = 0;      // 1:現在地設定、2:Flag設定、3:位置計測、5:地図表示
+let can_mode  = 0;      // 1:現在地設定、2:Flag設定、3:位置計測、5:地図表示、6:経路表示
 let con_file  = "";     // 地図file名
 let con_long  = 2;      // 長押し(2秒)
 let con_posF  = false;  // 現在地設定
@@ -1445,9 +1489,12 @@ let key_all;
 let key_save;
 let logA;               // log Array
 let logT;               // log Array
+let draw_f = true;      // draw flag
+let draw_md;            // draw 月日
+let draw_hm;            // draw 時分
+let draw_minute;        // draw 分
 let mouseDownDate;      // mouse down日付時間
 let mouseUpX;           // mouse up x
 let mouseUpY;           // mouse up y
-let scale_pos;
 let val_all;
 let val_save;
