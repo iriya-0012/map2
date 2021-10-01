@@ -461,7 +461,6 @@ can_log.addEventListener("touchstart",(e) => mouse_down(e,"t"));
 // タッチend
 can_log.addEventListener("touchend",(e) => {
     let obj = e.changedTouches[0];
-    info_disp(`touchend:x=${obj.pageX},y=${obj.pageX}`);
     mouse_up(obj.pageX,obj.pageY);
 });
 // 機能選択
@@ -1139,8 +1138,8 @@ function mouse_down(e,mt) {
 // マウスup
 function mouse_up(x,y) {
     // マウス up - down 長押
-    mouseUpX = x;
-    mouseUpY = y;
+    mouseUpX = Math.round(x);
+    mouseUpY = Math.round(y);
     mouseUpDate = new Date();
     if (mouseUpDate.getTime() - mouseDownDate.getTime() < con_long) return;
     // 地図表示、現在地取得
