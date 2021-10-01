@@ -461,6 +461,7 @@ can_log.addEventListener("touchstart",(e) => mouse_down(e,"t"));
 // タッチend
 can_log.addEventListener("touchend",(e) => {
     let obj = e.changedTouches[0];
+    info_disp(`touchend:x=${obj.pageX},y=${obj.pageX}`);
     mouse_up(obj.pageX,obj.pageY);
 });
 // 機能選択
