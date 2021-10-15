@@ -481,11 +481,11 @@ sel_a.addEventListener("change",() => {
                 return;
             }
             // 消去・地図表示
-            con_clear();
+            screen_reset("error","flag","log");
             screen_disp(8);
             if (cGen.adjF) {
                 // 取得済処理
-                CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+                screen_reset("flag");
                 cGen.display(CON_FLAG,cGen.x + cGen.adjX,cGen.y + cGen.adjY,"green",1);
             } else {
                 // 未取得処理
@@ -506,7 +506,7 @@ sel_a.addEventListener("change",() => {
                 return;
             }
             // 消去・地図表示
-            con_clear();
+            screen_reset("error","flag","log");
             // flag 描画
             storage_get();
             for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
@@ -530,7 +530,7 @@ sel_a.addEventListener("change",() => {
                 return;
             }
             // 消去・地図表示
-            con_clear();
+            screen_reset("error","flag","log");
             // flag 描画            
             storage_get();
             for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
@@ -544,7 +544,7 @@ sel_a.addEventListener("change",() => {
                 return;
             }
             // 消去・地図表示
-            con_clear();
+            screen_reset("error","flag","log");
             screen_disp(8);
             can_mode = 3;
             break;
@@ -764,28 +764,19 @@ in_ctrl_ins.addEventListener("click",() => {
     let key = `${MAP_FLAG}${cHead.id}_${no}`;
     localStorage.setItem(key,in_ctrl_text.value);
     // 再表示
-    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);    
-    storage_get();
-    for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
-    div_ctrl.style.display = "none";
+    screen_reset("flag");
 });
 // flag修正
 in_ctrl_upd.addEventListener("click",() => {
     localStorage.setItem(flagT[flagApos],in_ctrl_text.value);
     // 再表示
-    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);    
-    storage_get();
-    for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
-    div_ctrl.style.display = "none";
+    screen_reset("flag");
 });
 // flag削除
 in_ctrl_del.addEventListener("click",() => {
     localStorage.removeItem(flagT[flagApos]);
     // 再表示
-    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);    
-    storage_get();
-    for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
-    div_ctrl.style.display = "none";
+    screen_reset("flag");
 });
 // 実行
 in_data_exe.addEventListener("click",() => {
@@ -871,7 +862,7 @@ in_data_file.addEventListener('change',(e) => {
         }
     }
 });
-// 記録 n
+// 記録 n --> y
 in_data_n.addEventListener('click',() => {
     con_timerF = true;
     screen_rec();
@@ -879,7 +870,7 @@ in_data_n.addEventListener('click',() => {
     navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt);
     con_timerId = setInterval(gen_get,con_timerG * 1000); // 秒→ミリ秒 
 });
-// 記録 y
+// 記録 y --> n
 in_data_y.addEventListener('click',() => {
     con_timerF = false;
     screen_rec();
@@ -941,7 +932,10 @@ in_map_file.addEventListener('change',(e) => {
         // 現在地設定へ
         sel_a.value = "aGen";
         // 消去・地図表示
-        con_clear();
+        CON_MAIN.clearRect(0,0,can_main.width, can_main.height);
+        //CON_LOG.clearRect(0,0,can_main.width, can_main.height);
+        CON_MAIN.drawImage(cImage,0,0);
+        screen_reset("error","log","flag");
         screen_disp(8);
         // 未取得処理
         navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt);
@@ -973,13 +967,6 @@ window.onload = () => {
     // headA 作成
     headA_set();
     if (!navigator.geolocation) info_disp("navigator.geolocation 位置情報取得 不可");
-}
-// 消去
-function con_clear() {
-    CON_MAIN.clearRect(0,0,can_main.width, can_main.height);
-    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-    CON_LOG.clearRect(0,0,can_main.width, can_main.height);
-    CON_MAIN.drawImage(cImage,0,0);
 }
 // 丸
 function con_arc(con,x,y,radius,color) {
@@ -1028,10 +1015,9 @@ function gen_ok_a(gen) {
     cGen.adjust(true,true,0,0);
     cGen.display(CON_FLAG,cGen.x,cGen.y,"red",2);
 }
-// 現在地取得処理
+// 現在地取得成功 マウスup
 function gen_ok_b(gen) {
-    CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
-    cGen.set(gen);
+    screen_reset("error","flag");
     cGen.adjust(true,true,mouseUpX - cGen.x,mouseUpY - cGen.y);
     cGen.display(CON_FLAG,cGen.x,cGen.y,"red",2);
     cGen.display(CON_FLAG,cGen.x + cGen.adjX,cGen.y + cGen.adjY,"green",3);
@@ -1061,7 +1047,7 @@ function gen_err(err){
 	} ;
 	cGen.m = gen_mess[err.code];
     info_disp(cGen.m);
-    con_box(CON_ERROR,1,1,200,40,"red",cGen.m);     
+    con_box(CON_ERROR,0,50,200,40,"red",cGen.m);     
 }
 // オプション・オブジェクト
 let gen_opt = {
@@ -1142,7 +1128,7 @@ function mouse_up(x,y) {
     mouseUpY = Math.round(y);
     mouseUpDate = new Date();
     if (mouseUpDate.getTime() - mouseDownDate.getTime() < con_long) return;
-    // 地図表示、現在地取得
+    // 現在地設定、地図表示、現在地取得
     if (can_mode == 1 || can_mode == 5 || can_mode == 6) navigator.geolocation.getCurrentPosition(gen_ok_b,gen_err,gen_opt);
 }
 // 記録表示
@@ -1156,6 +1142,28 @@ function screen_rec() {
     } else {
         in_data_n.style.display = "inline";
         in_data_y.style.display = "none";
+    }
+}
+// リセット
+function screen_reset(...act) {
+    for (let i = 0 ; i < act.length ; i++){
+
+        console.info(act[i]);
+
+        switch (act[i]) {
+            case "error":
+                CON_ERROR.clearRect(0,0,can_error.width,can_error.height);
+                break;
+            case "flag":
+                CON_FLAG.clearRect(0,0,can_main.width, can_main.height);
+                storage_get();
+                for (item of flagA) cFlag.display(CON_FLAG,item.px,item.py,item.tx,item.ty,item.color,item.text);
+                div_ctrl.style.display = "none";
+                break;
+            case "log":
+                CON_LOG.clearRect(0,0,can_main.width, can_main.height);
+                break;
+        }
     }
 }
 // 表示
