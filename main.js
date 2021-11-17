@@ -2,12 +2,14 @@ const CON_ERROR = can_error.getContext("2d");
 const CON_MAIN  = can_main.getContext("2d");
 const CON_FLAG  = can_flag.getContext("2d");
 const CON_LOG   = can_log.getContext("2d");
-const CON_FONT  = "20px 'UD デジタル 教科書体 NP-B'";
+const FONT_CHAR = "20px 'UD デジタル 教科書体 NP-B'";
+const FONT_TIME = "16px 'UD デジタル 教科書体 NP-B'";
 const MAP_ALL   = "map.1_";
 const MAP_CTRL  = "map.1_c";
 const MAP_FLAG  = "map.1_f_";
 const MAP_HEAD  = "map.1_h_";
 const MAP_LOG   = "map.1_l_";
+let cImage      = new Image;
 // 変換
 class classConvert {
     set(left,right,bottom,top,width,height){
@@ -108,7 +110,7 @@ class classFlag {
     }
     // 吹出 flag 描画
     display(con,px,py,tx,ty,color,text) {
-        con.font = CON_FONT;
+        con.font = FONT_CHAR;
         let len = con.measureText(text);    // 幅測定
         // 丸作成
         con.beginPath();
@@ -192,7 +194,7 @@ class classGenzai {
             3: "調整後の現在地"
         }
         let text = messA[mess];
-        con.font = CON_FONT;
+        con.font = FONT_CHAR;
         let len = con.measureText(text);    // 幅測定
         // 丸
         con.beginPath();
@@ -290,7 +292,7 @@ class classLog {
         }
     }
     // 吹出 log 描画
-    display(con,lr,md,hm,long,ax,lat,ay,dir) {
+    display(con,sel,md,hm,long,ax,lat,ay,dir) {
         // 色の選択
         let color; 
         if      (hm < "0600") {color = "black"}
@@ -303,7 +305,7 @@ class classLog {
         let bx;         // 箱・左上x
         let by;         // 箱・左上y
         let bh = 22;    // 箱・高
-        let bw = 74;    // 箱・幅
+        let bw = 56;    // 箱・幅 74
         let lx;         // 線・終端x
         let ly;         // 線・終端y
         let llx = 50;   // 線・長x
@@ -340,7 +342,7 @@ class classLog {
                 lx = px + llx;
                 ly = py;
         }
-        con.font = CON_FONT;
+        con.font = FONT_TIME;
         // 丸作成
         con.beginPath();
         con.strokeStyle = color;            // 線の色
@@ -348,18 +350,19 @@ class classLog {
         con.arc(px,py,3,0,Math.PI*2,true);
         con.fill();                         // 塗りつぶし
         con.stroke();
-        // 吹出必要判定
-        let draw = true; // false; @@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        // 時間吹出判定
+        let draw = false;
         let minute = hm.substr(0,2) * 60 + Number(hm.substr(2,2));
-        switch (lr) {
-            // log
-            case "l":
+        switch (sel) {
+            // 表示時間・表示線時
+            case "aDispT":
+            case "aDispB":
                 draw = true;
                 break;
-            // 経路
-            case "r":
+            // 表示・表示線
+            default:
                 if (this.first) {
-                    this.first = false;
+                    // this.first = false;
                     this.s_md = md;
                     this.s_minute = minute + 10;  // 次は10分後
                     draw = true;
@@ -373,7 +376,7 @@ class classLog {
                 }
                 break;                
         }
-        // 吹出作成
+        // 時間吹出作成
         if (draw) {
             // 四角形作成
             con.beginPath();
@@ -381,7 +384,8 @@ class classLog {
             con.fillStyle = color;
             con.strokeRect(bx,by,bw,bh);
             // 文字列描画
-            con.fillText(text,bx+5,by+19);
+            //con.fillText(text,bx+5,by+19);
+            con.fillText(text,bx+2,by+17);
             // 直線作成
             con.beginPath();
             con.lineWidth = 2;
@@ -391,16 +395,17 @@ class classLog {
             con.stroke();           
         }
         // 丸～丸の線作成
-        if (!this.first) {
+        if ((sel == "aDispB" || sel == "aDispL") && (!this.first)) {
             con.beginPath();
             con.lineWidth = 2;
-            con.strokeStyle = "black"; // color; @@@@@@@@@@@@@@@@
+            con.strokeStyle = "black";
             con.moveTo(px,py);
             con.lineTo(this.s_px,this.s_py);
             con.stroke();
         }
         this.s_px = px;
         this.s_py = py;
+        this.first = false;
     }
     // 時分を分に換算
     minute(hm) {
@@ -481,223 +486,27 @@ can_log.addEventListener("touchend",(e) => {
     let obj = e.changedTouches[0];
     mouse_up(obj.pageX,obj.pageY);
 });
-// 機能選択
-sel_a.addEventListener("change",() => {
-    switch (sel_a.value) {
-        // 地図選択
-        case "aMap":
-            if (con_timerF) {
-                alert("記録中は地図の選択不可");
-                return;
-            }
-            in_map_file.click();
-            break;
-        // 現在地設定
-        case "aGen":
-            if (con_file == "") {
-                alert("地図未選択");
-                return;
-            }
-            // 消去・地図表示・現在地取得
-            screen_reset("error","flag","log");
-            screen_disp(8);
-            navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt);           
-            can_mode = 1;
-            break;
-        // 地図表示
-        case "aDisp":
-        // 経路表示
-        case "aRoute":
-            if (con_file == "") {
-                alert("地図未選択");
-                return;
-            }
-            if (!cGen.adjF) {
-                alert("現在地未設定");
-                return;
-            }
-            // 消去・flag log描画
-            screen_reset("error","flag","log");
-            cLog.first = true;
-            if (sel_a.value == "aDisp") {
-                // log 描画
-                for (item of logA) cLog.display(CON_LOG,"l",item.md,item.hm,item.long,item.x,item.lat,item.y,item.dir);
-                can_mode = 5;            
-            } else {
-                // route 描画
-                for (item of logA) cLog.display(CON_LOG,"r",item.md,item.hm,item.long,item.x,item.lat,item.y,item.dir);
-                can_mode = 6;
-            }
-            screen_disp(8);
-            break;
-        // Flag設定
-        case "aFlag":
-            if (con_file == "") {
-                alert("地図未選択");
-                return;
-            }
-            // 消去・flag log描画
-            screen_reset("error","flag","log");
-            screen_disp(8);
-            can_mode = 2;       
-            break;
-        // 位置計測
-        case "aPos":
-            if (con_file == "") {
-                alert("地図未選択");
-                return;
-            }
-            // 消去・地図表示
-            screen_reset("error","flag","log");
-            screen_disp(8);
-            can_mode = 3;
-            break;
-        // 記録開始
-        case "aStart":
-            if (con_timerF) {
-                alert("記録中");
-                return;
-            }
-            if (con_file == "") {
-                alert("地図未選択");
-                return;
-            }
-            if (!cGen.adjF) {
-                alert("現在地未設定");
-                return;
-            }
-            con_timerF = true;
-            screen_rec();
-            // 現在地取得
-            navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt);
-            con_timerId = setInterval(gen_get,con_timerG * 1000); // 秒→ミリ秒
-            break;
-        // 記録停止
-        case "aStop":
-            if (con_timerF) { 
-                clearInterval(con_timerId);
-                con_timerF = false;
-                screen_rec();
-            }
-            break;
-        // Data処理
-        case "aData":
-            sel_data.value = "";
-            screen_disp(11);
-            break;
-    }        
-});
-// Data処理
-sel_data.addEventListener("change",() => {
-    switch (sel_data.value) {
-        // 全表示
-        case "dispAll":
-            tbody_detete(tbo_all);
-            screen_disp(22);
-            tbo_all_disp();
-            break;
-        // 選択表示
-        case "dispSel":
-            screen_disp(12);
-            sel_c_disp();     
-            break;
-        // 集計表示
-        case "dispSumm":
-            tbody_detete(tbo_summ);
-            screen_disp(24);
-            tbo_summ_disp();    
-            break;
-        // 全保存
-        case "saveAll":
-            tbody_detete(tbo_all);
-            screen_disp(81);
-            tbo_all_disp();
-            break;
-        // 選択保存
-        case "saveSel":
-            screen_disp(12);
-            sel_c_disp();
-            break;
-        // 管理データ追加
-        case "addKan":
-            // 管理データ
-            let kan = [
-                ["map.1_c",false,"0002 0600"],
-                ["map.1_h_xa_sample-a",false,"135.000000 140.000000 30.000000 40.000000"],
-                ["map.1_h_xb_sample-b",false,"140.000000 145.000000 40.000000 50.000000"],
-            ];
-            // 登録済データ確認
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                for (let j = 0; j < kan.length; j++) {
-                    if (kan[j][0] == key ) {
-                        kan[j][1] = true; 
-                    } else if (kan[j][0] == key.substr(0,kan[j][0].length)) kan[j][1] = true; 
-                }
-            }
-            // 行削除
-            tbody_detete(tbo_all);
-            // 未登録データ表示
-            key_all = [];
-            val_all = [];
-            for (let i = 0; i < kan.length; i++) {
-                if (kan[i][1] == false) {
-                    key_all.push(kan[i][0]);
-                    val_all.push(kan[i][2]);
-                    tbody_append(tbo_all,kan[i][0],kan[i][2]);
-                } 
-            }
-            // 未登録データ追加
-            if (key_all.length == 0) {
-                alert("追加データ無し");
-                screen_disp(11);         
-            } else {
-                screen_disp(81);
-            }
-            break;
-        // 保存データ追加
-        case "addFile":
-            in_data_file.click();
-            // 行削除
-            tbody_detete(tbo_all);
-            screen_disp(81);
-            break;
-        // 選択削除
-        case "delSel":
-            screen_disp(12);
-            sel_c_disp();
-            break;
-    }        
-});
-// 選択変更
-sel_c.addEventListener("change",() => {
-    switch (sel_data.value) {
-        // 選択表示
-        case "dispSel":
-            screen_disp(23);
-            tbody_detete(tbo_head);
-            tbody_detete(tbo_log);
-            tbody_detete(tbo_flag);
-            tbo_head_flag_log_disp();
-            break;
-        // 選択保存
-        case "saveSel":
-            screen_disp(82);
-            tbody_detete(tbo_head);
-            tbody_detete(tbo_log);
-            tbody_detete(tbo_flag);
-            tbo_head_flag_log_disp();
-            break;
-        // 選択削除
-        case "delSel":
-            screen_disp(83);
-            tbody_detete(tbo_head);
-            tbody_detete(tbo_log);
-            tbody_detete(tbo_flag);
-            tbo_head_flag_log_disp();
-            break;
-    }
-});
+// 地図読込完了
+cImage.onload = () => {
+    // 地図情報セット
+    can_main.width   = cImage.width;
+    can_main.height  = cImage.height;
+    can_flag.width   = cImage.width;
+    can_flag.height  = cImage.height;
+    can_log.width    = cImage.width;
+    can_log.height   = cImage.height;
+    can_error.width  = 400;
+    can_error.height = 200;
+    cConv.set(cHead.left,cHead.right,cHead.bottom,cHead.top,cImage.width,cImage.height);
+    // 現在地設定へ
+    sel_a.value = "aGen";
+    // 消去・地図表示
+    screen_reset("main","error","log","flag");
+    screen_disp(8);
+    // 未取得処理
+    navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt);
+    can_mode = 1;
+}
 // 追加
 in_act_ins.addEventListener("click",() => {
     let key = in_act_key.value;
@@ -794,6 +603,19 @@ in_data_exe.addEventListener("click",() => {
             for (let i = 0; i < key_all.length; i++) val_all.push(localStorage.getItem(key_all[i]));
             cText.save("map_all",key_all,val_all);
             break;
+        // cfh保存
+        case "saveCfh":
+            key_all = [];
+            val_all = [];
+            // 登録データ取得
+            for (let i = 0; i < localStorage.length; i++) {
+                let k = localStorage.key(i);
+                if (k.substr(0,7) == MAP_CTRL || k.substr(0,8) == MAP_FLAG || k.substr(0,8) == MAP_HEAD) key_all.push(k);
+            }
+            key_all.sort()
+            for (let i = 0; i < key_all.length; i++) val_all.push(localStorage.getItem(key_all[i]));
+            cText.save("map_cfh",key_all,val_all);       
+            break;      
         // 選択保存
         case "saveSel":
             id = sel_c.value.substr(8,2); 
@@ -920,28 +742,226 @@ in_map_file.addEventListener('change',(e) => {
     // 最後を選択
     sel_map_ex.options[sel_map_ex.length - 1].selected = true;
     cHead = headA[sel_map_ex.value];
-    // 地図読込  
-    cImage.src = file_url;
-    cImage.onload = () => {
-        // 地図情報セット
-        can_main.width   = cImage.width;
-        can_main.height  = cImage.height;
-        can_flag.width   = cImage.width;
-        can_flag.height  = cImage.height;
-        can_log.width    = cImage.width;
-        can_log.height   = cImage.height;
-        can_error.width  = 400;
-        can_error.height = 200;
-        cConv.set(cHead.left,cHead.right,cHead.bottom,cHead.top,cImage.width,cImage.height);
-        // 現在地設定へ
-        sel_a.value = "aGen";
-        // 消去・地図表示
-        screen_reset("main","error","log","flag");
-        screen_disp(8);
-        // 未取得処理
-        navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt);
-        can_mode = 1;
+    // 地図読込
+    cImage.src = file_url;   
+});
+// 機能選択
+sel_a.addEventListener("change",() => {
+    switch (sel_a.value) {
+        // 地図選択
+        case "aMap":
+            if (con_timerF) {
+                alert("記録中は地図の選択不可");
+                return;
+            }
+            in_map_file.value = "";
+            in_map_file.click();
+            break;
+        // 現在地設定
+        case "aGen":
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            // 消去・地図表示・現在地取得
+            screen_reset("error","flag","log");
+            screen_disp(8);
+            navigator.geolocation.getCurrentPosition(gen_ok_a,gen_err,gen_opt);           
+            can_mode = 1;
+            break;
+        // 表示
+        case "aDispN":
+        case "aDispL":
+        case "aDispT":
+        case "aDispB":
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            if (!cGen.adjF) {
+                alert("現在地未設定");
+                return;
+            }
+            // 消去・flag log描画
+            screen_reset("error","flag","log");
+            cLog.first = true;
+            for (item of logA) cLog.display(CON_LOG,sel_a.value,item.md,item.hm,item.long,item.x,item.lat,item.y,item.dir);
+            screen_disp(8);
+            can_mode = 5;
+            break;
+        // Flag設定
+        case "aFlag":
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            // 消去・flag log描画
+            screen_reset("error","flag","log");
+            screen_disp(8);
+            can_mode = 2;       
+            break;
+        // 位置計測
+        case "aPos":
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            // 消去・地図表示
+            screen_reset("error","flag","log");
+            screen_disp(8);
+            can_mode = 3;
+            break;
+        // 記録開始
+        case "aStart":
+            if (con_timerF) {
+                alert("記録中");
+                return;
+            }
+            if (con_file == "") {
+                alert("地図未選択");
+                return;
+            }
+            if (!cGen.adjF) {
+                alert("現在地未設定");
+                return;
+            }
+            con_timerF = true;
+            screen_rec();
+            // 現在地取得
+            navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt);
+            con_timerId = setInterval(gen_get,con_timerG * 1000); // 秒→ミリ秒
+            break;
+        // 記録停止
+        case "aStop":
+            if (con_timerF) { 
+                clearInterval(con_timerId);
+                con_timerF = false;
+                screen_rec();
+            }
+            break;
+        // データ
+        case "aData":
+            screen_disp(11);
+            sel_data.value = "";
+            break;
+    }        
+});
+// 選択変更
+sel_c.addEventListener("change",() => {
+    switch (sel_data.value) {
+        // 選択表示
+        case "dispSel":
+            screen_disp(23);
+            tbody_detete(tbo_head);
+            tbody_detete(tbo_log);
+            tbody_detete(tbo_flag);
+            tbo_head_flag_log_disp();
+            break;
+        // 選択保存
+        case "saveSel":
+            screen_disp(82);
+            tbody_detete(tbo_head);
+            tbody_detete(tbo_log);
+            tbody_detete(tbo_flag);
+            tbo_head_flag_log_disp();
+            break;
+        // 選択削除
+        case "delSel":
+            screen_disp(83);
+            tbody_detete(tbo_head);
+            tbody_detete(tbo_log);
+            tbody_detete(tbo_flag);
+            tbo_head_flag_log_disp();
+            break;
     }
+});
+// Data処理
+sel_data.addEventListener("change",() => {
+    switch (sel_data.value) {
+        // 全表示
+        case "dispAll":
+            tbody_detete(tbo_all);
+            screen_disp(22);
+            tbo_all_disp();
+            break;
+        // 選択表示
+        case "dispSel":
+            screen_disp(12);
+            sel_c_disp();     
+            break;
+        // 集計表示
+        case "dispSumm":
+            tbody_detete(tbo_summ);
+            screen_disp(24);
+            tbo_summ_disp();    
+            break;
+        // 全保存
+        case "saveAll":
+            tbody_detete(tbo_all);
+            screen_disp(81);
+            tbo_all_disp();
+            break;
+       // cfh存
+       case "saveCfh":
+            tbody_detete(tbo_all);
+            screen_disp(81);
+            tbo_cfh_disp();
+            break;
+        // 選択保存
+        case "saveSel":
+            screen_disp(12);
+            sel_c_disp();
+            break;
+        // 管理データ追加
+        case "addKan":
+            // 管理データ
+            let kan = [
+                ["map.1_c",false,"0002 0600"],
+                ["map.1_h_xa_sample-a",false,"135.000000 140.000000 30.000000 40.000000"],
+                ["map.1_h_xb_sample-b",false,"140.000000 145.000000 40.000000 50.000000"],
+            ];
+            // 登録済データ確認
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                for (let j = 0; j < kan.length; j++) {
+                    if (kan[j][0] == key ) {
+                        kan[j][1] = true; 
+                    } else if (kan[j][0] == key.substr(0,kan[j][0].length)) kan[j][1] = true; 
+                }
+            }
+            // 行削除
+            tbody_detete(tbo_all);
+            // 未登録データ表示
+            key_all = [];
+            val_all = [];
+            for (let i = 0; i < kan.length; i++) {
+                if (kan[i][1] == false) {
+                    key_all.push(kan[i][0]);
+                    val_all.push(kan[i][2]);
+                    tbody_append(tbo_all,kan[i][0],kan[i][2]);
+                } 
+            }
+            // 未登録データ追加
+            if (key_all.length == 0) {
+                alert("追加データ無し");
+                screen_disp(11);         
+            } else {
+                screen_disp(81);
+            }
+            break;
+        // 保存データ追加
+        case "addFile":
+            in_data_file.click();
+            // 行削除
+            tbody_detete(tbo_all);
+            screen_disp(81);
+            break;
+        // 選択削除
+        case "delSel":
+            screen_disp(12);
+            sel_c_disp();
+            break;
+    }        
 });
 // 同じ地図の別のグループ
 sel_map_ex.addEventListener("change",() => cHead = headA[sel_map_ex.value]);
@@ -1138,7 +1158,7 @@ function mouse_up(x,y) {
     mouseUpDate = new Date();
     if (mouseUpDate.getTime() - mouseDownDate.getTime() < con_long) return;
     // 現在地設定、地図表示、現在地取得
-    if (can_mode == 1 || can_mode == 5 || can_mode == 6) navigator.geolocation.getCurrentPosition(gen_ok_b,gen_err,gen_opt);
+    if (can_mode == 1 || can_mode == 5) navigator.geolocation.getCurrentPosition(gen_ok_b,gen_err,gen_opt);
 }
 // 記録表示
 function screen_rec() {
@@ -1181,7 +1201,7 @@ function screen_disp(screen) {
     if (screen == 1)  {screen_sub(0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)}
     // 地図選択    
     if (screen == 8)  {screen_sub(1,2,0,0,0,0,0,0,0,0,0,0,0,0,0)}
-    // データ操作   
+    // データ
     if (screen == 11) {screen_sub(0,0,2,0,0,0,0,0,0,0,0,0,0,0,1)}   
     // 選択表示
     if (screen == 12) {screen_sub(0,0,2,2,0,0,0,0,0,0,0,0,0,0,1)}
@@ -1294,10 +1314,10 @@ function storage_log(map,id,dt,opt,long,lat,str) {
     let key = `${map}${id}_${mm}${dd}_${HH}${MM}${opt}`;
     let val = `${long} ${lat} ${str}`;
     localStorage.setItem(key,val);
-    if (sel_a.value == "aDisp") {
-        cLog.display(CON_LOG,"l",`${mm}${dd}`,`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
+    if (sel_a.value == "aDispT") {
+        cLog.display(CON_LOG,sel_a.value,`${mm}${dd}`,`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
     } else {
-        cLog.display(CON_LOG,"r",`${mm}${dd}`,`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
+        cLog.display(CON_LOG,sel_a.value,`${mm}${dd}`,`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
     } 
 }
 // tbo_all 表示
@@ -1325,6 +1345,20 @@ function tbo_all_click(x) {
     in_act_val.value = tbo_all.rows[r].cells[1].innerHTML;
     key_save = in_act_key.value;
     val_save = in_act_val.value;    
+}
+// tbo_cfh 表示
+function tbo_cfh_disp() {
+    // 登録データ取得
+    key_all = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        let x = localStorage.key(i);
+        if (x.substr(0,7) == MAP_CTRL || x.substr(0,8) == MAP_FLAG || x.substr(0,8) == MAP_HEAD) {    
+            key_all.push(x);
+        }
+    }
+    key_all.sort();
+    // 行追加
+    for (item of key_all) tbody_append(tbo_all,item,localStorage.getItem(item)); 
 }
 // tbo_summ 表示
 function tbo_summ_disp() {
@@ -1465,9 +1499,8 @@ let cGen      = new classGenzai;
 let cLog      = new classLog;
 let cHead     = new classHead;
 let cText     = new classText;
-let cImage    = new Image;
 let can_rect  = can_main.getBoundingClientRect();
-let can_mode  = 0;      // 1:現在地設定、2:Flag設定、3:位置計測、5:地図表示、6:経路表示
+let can_mode  = 0;      // 1:現在地設定、2:Flag設定、3:位置計測、5:表示
 let con_file  = "";     // 地図file名
 let con_long  = 2;      // 長押し(2秒)
 let con_posF  = false;  // 現在地設定
