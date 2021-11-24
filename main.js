@@ -147,7 +147,8 @@ class classGenzai {
         this.y;             // 現在地 y    
         this.m = "";        // 現在地取得メッセージ
         this.view = false;  // 現在地 GPS位置 true:描画中 false:非描画中
-        this.adjDt;         // 調整位置取得、日付時間
+        this.adjMd;         // 調整位置取得、日付
+        this.adjHm;         // 調整位置取得、時間
         this.adjF = false;  // 調整設定      true:済   false:未
         this.adjL = false;  // 調整 log 出力 true:必要 false:不要
         this.adjX = 0;      // 調整 x
@@ -166,7 +167,13 @@ class classGenzai {
     }
     // セット adjusr
     adjust(flag,log,x,y) {
-        this.adjDt = new Date();
+        let dt = new Date();
+        let mm = ("00" + (dt.getMonth()+1)).slice(-2);
+        let dd = ("00" +  dt.getDate()).slice(-2);
+        let HH = ("00" + (dt.getHours())).slice(-2);
+        let MM = ("00" + (dt.getMinutes())).slice(-2);
+        this.adjMd = `${mm}${dd}`;
+        this.adjHm = `${HH}${MM}`;
         this.adjF  = flag;
         this.adjL  = log;
         this.adjX  = x;
@@ -291,6 +298,12 @@ class classLog {
             this.dir = "e";
         }
     }
+    // Web Storage 出力
+    storage(map,id,md,hm,opt,long,lat,ax,ay) {
+        let key = `${map}${id}_${md}_${hm}${opt}`;
+        let val = `${long} ${lat} ${ax} ${ay}`;
+        localStorage.setItem(key,val);
+    }
     // 吹出 log 描画
     display(con,sel,md,hm,long,ax,lat,ay,dir) {
         // 色の選択
@@ -362,16 +375,16 @@ class classLog {
             // 表示・表示線
             default:
                 if (this.first) {
-                    // this.first = false;
+                    this.first = false;
                     this.s_md = md;
-                    this.s_minute = minute + 10;  // 次は10分後
+                    this.s_minute = minute + con_timerL;  // 次の時間
                     draw = true;
                 } else if (md != this.s_md) {
                     this.s_md = md;
-                    this.s_minute = minute + 10;
+                    this.s_minute = minute + con_timerL;
                     draw = true;
                 } else if (minute >= this.s_minute) {
-                    this.s_minute = minute + 10;             
+                    this.s_minute = minute + con_timerL;             
                     draw = true;
                 }
                 break;                
@@ -384,7 +397,6 @@ class classLog {
             con.fillStyle = color;
             con.strokeRect(bx,by,bw,bh);
             // 文字列描画
-            //con.fillText(text,bx+5,by+19);
             con.fillText(text,bx+2,by+17);
             // 直線作成
             con.beginPath();
@@ -408,9 +420,7 @@ class classLog {
         this.first = false;
     }
     // 時分を分に換算
-    minute(hm) {
-        return hm.substr(0,2) * 60 + hm.substr(2,2);
-    }
+    minute(hm) {return hm.substr(0,2) * 60 + hm.substr(2,2)}
 }
 // Text処理
 class classText {
@@ -688,7 +698,7 @@ in_data_file.addEventListener('change',(e) => {
         }
     }
 });
-// 記録 n --> y
+// 記録青 n --> y
 in_data_n.addEventListener('click',() => {
     con_timerF = true;
     screen_rec();
@@ -696,7 +706,7 @@ in_data_n.addEventListener('click',() => {
     navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt);
     con_timerId = setInterval(gen_get,con_timerG * 1000); // 秒→ミリ秒 
 });
-// 記録 y --> n
+// 記録赤 y --> n
 in_data_y.addEventListener('click',() => {
     con_timerF = false;
     screen_rec();
@@ -810,34 +820,6 @@ sel_a.addEventListener("change",() => {
             screen_reset("error","flag","log");
             screen_disp(8);
             can_mode = 3;
-            break;
-        // 記録開始
-        case "aStart":
-            if (con_timerF) {
-                alert("記録中");
-                return;
-            }
-            if (con_file == "") {
-                alert("地図未選択");
-                return;
-            }
-            if (!cGen.adjF) {
-                alert("現在地未設定");
-                return;
-            }
-            con_timerF = true;
-            screen_rec();
-            // 現在地取得
-            navigator.geolocation.getCurrentPosition(gen_ok_l,gen_err,gen_opt);
-            con_timerId = setInterval(gen_get,con_timerG * 1000); // 秒→ミリ秒
-            break;
-        // 記録停止
-        case "aStop":
-            if (con_timerF) { 
-                clearInterval(con_timerId);
-                con_timerF = false;
-                screen_rec();
-            }
             break;
         // データ
         case "aData":
@@ -982,8 +964,9 @@ window.onload = () => {
     //  control 有無確認 
     if (ctrl != -1) {
         let str = localStorage.getItem(MAP_CTRL);
-        con_long = str.substr(0,4) * 1000;
-        con_timerG = str.substr(5,4);
+        con_long = Number(str.substr(0,4)) * 1000;
+        con_timerG = Number(str.substr(5,4));
+        con_timerL = Number(str.substr(10,4));
         }
     // headA 作成
     headA_set();
@@ -1058,16 +1041,24 @@ function gen_ok_l(gen) {
     if (cGen.adjL) {
         // 設定地 log 出力
         info_disp(`設定:${cGen.long} ${cGen.lat} ${cGen.adjX} ${cGen.adjY}`);
-        storage_log(MAP_LOG,cHead.id,cGen.adjDt,"a",cGen.long,cGen.lat,`${cGen.adjX} ${cGen.adjY}`);
+        cLog.storage(MAP_LOG,cHead.id,cGen.adjMd,cGen.adjHm,"a",cGen.long,cGen.lat,cGen.adjX,cGen.adjY);
+        cLog.display(CON_LOG,sel_a.value,cGen.adjMd,cGen.adjHm,cGen.long,cGen.adjX,cGen.lat,cGen.adjY,"r");    
         cGen.adjL = false;
     }
     // 現在地 log 出力
     let dt = new Date();
+    let mm = ("00" + (dt.getMonth()+1)).slice(-2);
+    let dd = ("00" +  dt.getDate()).slice(-2);
+    let HH = ("00" + (dt.getHours())).slice(-2);
+    let MM = ("00" + (dt.getMinutes())).slice(-2);
+    let Md = `${mm}${dd}`;
+    let Hm = `${HH}${MM}`;
     info_disp(`現在:${cGen.long} ${cGen.lat}`);
-    storage_log(MAP_LOG,cHead.id,dt,"g",cGen.long,cGen.lat,"");   
+    cLog.storage(MAP_LOG,cHead.id,Md,Hm,"g",cGen.long,cGen.lat,"","");
+    cLog.display(CON_LOG,sel_a.value,Md,Hm,cGen.long,cGen.adjX,cGen.lat,cGen.adjY,"r");    
 }
 // 現在地取得失敗
-function gen_err(err){
+function gen_err(err) {
 	let gen_mess = {
 		0: "原因不明のエラー",
 		1: "位置情報の取得不許可",
@@ -1083,25 +1074,6 @@ let gen_opt = {
 	"enableHighAccuracy": false,
 	"timeout": 8000,
 	"maximumAge": 5000,
-}
-// デバッグ現在地
-function gen_debug() {
-    // 経度 表示
-    let text = `経度:${cGen.long} (${cHead.left} ${cHead.right})`;
-    // 経度チェック
-    if (cGen.long < cHead.left || cGen.long > cHead.right) {text += "範囲外"}
-    // 緯度 表示
-    text += `\n緯度: ${cGen.lat} ( ${cHead.bottom}  ${cHead.top})`;
-    // 緯度チェック
-    if (cGen.lat < cHead.bottom || cGen.lat > cHead.top) {text += "範囲外"}
-    // 高度・方角・速度 表示
-    if (cGen.a != null) {text += `\n高度:${cGen.a} m`}
-    if (cGen.h != null) {text += `\n方角:${cGen.h}`}
-    if (cGen.s != null) {text += `\n速度:${cGen.s} m/s`}
-    // ピクセルに変換
-    text += `\ngenX=${cGen.x},genY=${cGen.x}`;
-    // 表示
-    console.log(text);
 }
 // headA 作成
 function headA_set() {
@@ -1304,22 +1276,6 @@ function storage_get() {
         logA.push(cLog);
     }
 }
-// Web Storage 出力
-function storage_log(map,id,dt,opt,long,lat,str) {
-    let mm = ("00" + (dt.getMonth()+1)).slice(-2);
-    let dd = ("00" +  dt.getDate()).slice(-2);
-    let HH = ("00" + (dt.getHours())).slice(-2);
-    let MM = ("00" + (dt.getMinutes())).slice(-2);
-    // log追加
-    let key = `${map}${id}_${mm}${dd}_${HH}${MM}${opt}`;
-    let val = `${long} ${lat} ${str}`;
-    localStorage.setItem(key,val);
-    if (sel_a.value == "aDispT") {
-        cLog.display(CON_LOG,sel_a.value,`${mm}${dd}`,`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
-    } else {
-        cLog.display(CON_LOG,sel_a.value,`${mm}${dd}`,`${HH}${MM}`,long,cGen.adjX,lat,cGen.adjY,"r");
-    } 
-}
 // tbo_all 表示
 function tbo_all_disp() {
     // 登録データ取得
@@ -1506,7 +1462,8 @@ let con_long  = 2;      // 長押し(2秒)
 let con_posF  = false;  // 現在地設定
 let con_timerId;        // タイマーid
 let con_timerF = false; // タイマー起動状態
-let con_timerG = 600;   // 現在地取得間隔(600秒)
+let con_timerG = 10;    // 現在地取得間隔(10秒)
+let con_timerL = 300;   // ログ保存間隔(5分)
 let flagA;              // flag Array
 let flagApos;           // flag Array 選択位置
 let flagT;              // flag Array
