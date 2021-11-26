@@ -271,11 +271,19 @@ class classLog {
         this.x;         // 調整 x
         this.y;         // 調整 y
         this.dir; 　    // 吹出方向,e:東,w:西,s:南,n:北,無指定:東
-        this.first;     // 一件目
-        this.s_md;      // save 月日
-        this.s_minute;  // save 分
-        this.s_px;      // save 丸x
-        this.s_py;      // save 丸y
+        this.l_first;   // 一件目 log
+        this.l_md;      // log save 月日
+        this.l_minute;  // log save 分
+        this.l_px;      // log save 丸x
+        this.l_py;      // log save 丸y
+        this.s_first;   // 一件目 storage
+        this.s_md;      // storage save 月日
+        this.s_minute;  // storage save 分
+    }
+    // 開始状態
+    first() {
+        this.l_first = true;
+        this.s_first = true;
     }
     // セット
     set(key,value,ax,ay) {
@@ -300,9 +308,26 @@ class classLog {
     }
     // Web Storage 出力
     storage(map,id,md,hm,opt,long,lat,ax,ay) {
-        let key = `${map}${id}_${md}_${hm}${opt}`;
-        let val = `${long} ${lat} ${ax} ${ay}`;
-        localStorage.setItem(key,val);
+        let draw = false;
+        let minute = hm.substr(0,2) * 60 + Number(hm.substr(2,2));        
+        if (this.s_first) {
+            this.s_md = md;
+            this.s_minute = minute + 1;    // 次の分
+            draw = true;
+        } else if (md != this.s_md) {
+            this.s_md = md;
+            this.s_minute = 0;
+            draw = true;
+        } else if (minute >= this.s_minute) {
+            this.s_minute = minute + 1;             
+            draw = true;
+        }
+        if (draw) {
+            let key = `${map}${id}_${md}_${hm}${opt}`;
+            let val = `${long} ${lat} ${ax} ${ay}`;
+            localStorage.setItem(key,val);
+        }
+        this.s_first = false;
     }
     // 吹出 log 描画
     display(con,sel,md,hm,long,ax,lat,ay,dir) {
@@ -374,17 +399,16 @@ class classLog {
                 break;
             // 表示・表示線
             default:
-                if (this.first) {
-                    this.first = false;
-                    this.s_md = md;
-                    this.s_minute = minute + con_timerL;  // 次の時間
+                if (this.l_first) {
+                    this.l_md = md;
+                    this.l_minute = minute + con_timerL;    // 次の分
                     draw = true;
-                } else if (md != this.s_md) {
-                    this.s_md = md;
-                    this.s_minute = minute + con_timerL;
+                } else if (md != this.l_md) {
+                    this.l_md = md;
+                    this.l_minute = 0;
                     draw = true;
-                } else if (minute >= this.s_minute) {
-                    this.s_minute = minute + con_timerL;             
+                } else if (minute >= this.l_minute) {
+                    this.l_minute = minute + con_timerL;             
                     draw = true;
                 }
                 break;                
@@ -407,20 +431,18 @@ class classLog {
             con.stroke();           
         }
         // 丸～丸の線作成
-        if ((sel == "aDispB" || sel == "aDispL") && (!this.first)) {
+        if ((sel == "aDispB" || sel == "aDispL") && (!this.l_first)) {
             con.beginPath();
             con.lineWidth = 2;
             con.strokeStyle = "black";
             con.moveTo(px,py);
-            con.lineTo(this.s_px,this.s_py);
+            con.lineTo(this.l_px,this.l_py);
             con.stroke();
         }
-        this.s_px = px;
-        this.s_py = py;
-        this.first = false;
+        this.l_px = px;
+        this.l_py = py;
+        this.l_first = false;
     }
-    // 時分を分に換算
-    minute(hm) {return hm.substr(0,2) * 60 + hm.substr(2,2)}
 }
 // Text処理
 class classText {
@@ -794,7 +816,7 @@ sel_a.addEventListener("change",() => {
             }
             // 消去・flag log描画
             screen_reset("error","flag","log");
-            cLog.first = true;
+            cLog.first;
             for (item of logA) cLog.display(CON_LOG,sel_a.value,item.md,item.hm,item.long,item.x,item.lat,item.y,item.dir);
             screen_disp(8);
             can_mode = 5;
@@ -966,7 +988,7 @@ window.onload = () => {
         let str = localStorage.getItem(MAP_CTRL);
         con_long = Number(str.substr(0,4)) * 1000;
         con_timerG = Number(str.substr(5,4));
-        con_timerL = Number(str.substr(10,4));
+        con_timerL = Number(str.substr(10,4)) / 60;
         }
     // headA 作成
     headA_set();
@@ -1463,7 +1485,7 @@ let con_posF  = false;  // 現在地設定
 let con_timerId;        // タイマーid
 let con_timerF = false; // タイマー起動状態
 let con_timerG = 10;    // 現在地取得間隔(10秒)
-let con_timerL = 300;   // ログ保存間隔(5分)
+let con_timerL = 5;     // ログ保存間隔(5分)
 let flagA;              // flag Array
 let flagApos;           // flag Array 選択位置
 let flagT;              // flag Array
